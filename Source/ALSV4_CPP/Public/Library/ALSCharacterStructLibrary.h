@@ -18,7 +18,6 @@ class UCurveVector;
 class UAnimMontage;
 class UAnimSequenceBase;
 class UCurveFloat;
-class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
 struct FALSComponentAndTransform
@@ -207,6 +206,17 @@ struct FALSMovementStanceSettings
 
 	UPROPERTY(EditAnywhere, Category = "Movement Settings")
 	FALSMovementSettings Crouching;
+
+
+	// These are not stances, per se, but they fix the best here. I do not like this, but the other option is to have a
+	// new struct or many more entries in FALSMovementStateSettings. I consider this a workable solution only becuase
+	// this struct isnt used anywhere else.
+
+	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
+	FALSMovementSettings Flying;
+
+	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
+	FALSMovementSettings Swimming;
 };
 
 USTRUCT(BlueprintType)

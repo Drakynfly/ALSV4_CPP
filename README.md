@@ -1,39 +1,27 @@
-# Advanced Locomotion System Community
-![image](https://github.com/dyanikoglu/ALS-Community/raw/main/Resources/Readme_Content_2.gif)
+# Faerie Advanced Locomotion System
+![image](https://github.com/Drakynfly/ALSV4_CPP_Faerie/raw/main/Resources/Readme_Content_2.gif)
 
-Replicated and optimized community version of [Advanced Locomotion System V4](https://www.unrealengine.com/marketplace/en-US/product/advanced-locomotion-system-v1) for **Unreal Engine 4.26** with additional bug fixes.
-
-<p align="center">
-  <a href="https://discord.gg/wYYMHFu"><img src="https://i.imgur.com/LP9bZQj.png"></a>
-</p>
-
-## Supported Platforms
-- Windows
-- Linux
-
-*Mac, Android, IOS, and console builds are not tested and supported at the moment. Use the plugin on those platforms with your own risk.*
+## About
+- This fork is my (Guy Lundvall, aka Drakynfly) customized version of ALSV4_Community by dyanikoglu that adds features that I need for my project, and feel that I should leave here for anyone else who needs it, since I've gotten so much out of this plugin. 
 
 ## Features
-- Based on latest marketplace release (V4) of Advanced Locomotion System
-- Fully implemented in C++
-- Full replication support with low bandwidth usage
-- Plugin structure
-- Highly optimized for production
-- Mantling and debugging features are implemented as a separate plug-in/plug-out type actor component to reduce total overhead on base character class
-- Improved footstep behavior with Niagara particle & decal support.
-- Lots of bug fixes additional to marketplace version
+- All the features of the original. I generally keep this up-to-date with the latest release.
+- Flight support. This is the main point of this fork, and hence the name for it: Faerie ALS.
+- Swimming support planned. (Currently the framework is added but no animations)
+- Integration with other gameplay systems: Movement adjusts to world temperature (e.g, a weather system), and player weight (e.g. an inventory system).
+- Extra mantling features: Auto-mantling over short obstacles.
+- Easier project integration: there is no need to modify config files in this fork. See #Setting Up The Plugin.
 
-## Known Issues & Discussion
-- See [Issues](https://github.com/dyanikoglu/ALS-Community/issues) section for list of known issues
-- See [Discussions](https://github.com/dyanikoglu/ALS-Community/discussions) section to discuss anything about the plugin, and ask questions. Please do not open an issue for questions.
+## Known Issues
+- No animations for flying and swimming right now, just the framework.
+- See [Issues](https://github.com/dyanikoglu/ALSV4_CPP/issues) section
 
 ## Setting Up The Plugin
-- **C++ project is a requirement. BP projects are currently not supported.**
-- Clone the repository inside your project's `Plugins` folder, or download the latest release and extract it into your project's `Plugins` folder.
-- Put `Config/DefaultInput.ini` from the plugin folder inside your project's config folder. If your project already have this .ini file, merge it into yours.
-- Regenerate visual studio project files and build your project.
+- Clone the repository inside your project's `Plugins` folder, or download the latest release and extract it into your project's or engine's `Plugins` folder.
 - Launch the project, and enable plugin content viewer as seen below. This will show contents of the plugin in your content browser:
-![image](https://github.com/dyanikoglu/ALS-Community/raw/main/Resources/Readme_Content_1.png)
+![image](https://github.com/Drakynfly/ALSV4_CPP_Faerie/raw/main/Resources/Readme_Content_1.png)
+- This fork removes the need for any config file changes. There are now settings availible in Project Settings menu. Setup Axis inputs, trace channels, collision profiles, and more.
+- This fork seperates the functionality for controlling ALSBaseCharacter into a child class: ALSPlayerCharacter. Parent player controlled characters to this class for access to the rest of the input functions (which are renamed to all begin with "Input_").
 
 ## License & Contribution
 **Source code** of the plugin is licensed under MIT license, and other developers are encouraged to fork the repository, open issues & pull requests to help the development.

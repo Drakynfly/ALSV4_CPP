@@ -5,6 +5,10 @@
 // Original Author: Jens Bjarne Myhre
 // Contributors: Doğa Can Yanıkoğlu
 
+// ReSharper disable CppUE4CodingStandardNamingViolationWarning
+// ReSharper disable CppNonExplicitConvertingConstructor
+// ReSharper disable CppNonExplicitConversionOperator
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -29,7 +33,13 @@ private:
 	bool Grounded_ = false;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Movement System")
-	bool InAir_ = false;
+	bool Freefall_ = false;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Movement System")
+	bool Flight_ = false;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Movement System")
+	bool Swimming_ = false;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Movement System")
 	bool Mantling_ = false;
@@ -46,7 +56,9 @@ public:
 
 	const bool& None() const { return None_; }
 	const bool& Grounded() const { return Grounded_; }
-	const bool& InAir() const { return InAir_; }
+	const bool& Freefall() const { return Freefall_; }
+	const bool& Flight() const { return Flight_; }
+	const bool& Swimming() const { return Swimming_; }
 	const bool& Mantling() const { return Mantling_; }
 	const bool& Ragdoll() const { return Ragdoll_; }
 
@@ -57,9 +69,52 @@ public:
 		State = NewState;
 		None_ = State == EALSMovementState::None;
 		Grounded_ = State == EALSMovementState::Grounded;
-		InAir_ = State == EALSMovementState::InAir;
+		Freefall_ = State == EALSMovementState::Freefall;
+		Swimming_ = State == EALSMovementState::Swimming;
+		Flight_ = State == EALSMovementState::Flight;
 		Mantling_ = State == EALSMovementState::Mantling;
 		Ragdoll_ = State == EALSMovementState::Ragdoll;
+	}
+};
+
+USTRUCT(BlueprintType)
+struct FALSFlightMode
+{
+	GENERATED_BODY()
+
+private:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
+	EALSFlightMode FlightMode = EALSFlightMode::None;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
+	bool None_ = true;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
+	bool Hovering_ = false;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
+	bool Aerial_ = false;
+
+public:
+	FALSFlightMode()
+	{
+
+	}
+
+	FALSFlightMode(const EALSFlightMode InitialFlightMode) { *this = InitialFlightMode; }
+
+	const bool& None() const { return None_; }
+	const bool& Hovering() const { return Hovering_; }
+	const bool& Aerial() const { return Aerial_; }
+
+	operator EALSFlightMode() const { return FlightMode; }
+
+	void operator=(const EALSFlightMode InitialFlightMode)
+	{
+		FlightMode = InitialFlightMode;
+		None_ = FlightMode == EALSFlightMode::None;
+		Hovering_ = FlightMode == EALSFlightMode::Hovering;
+		Aerial_ = FlightMode == EALSFlightMode::Aerial;
 	}
 };
 
@@ -78,6 +133,9 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Character States")
 	bool Crouching_ = false;
 
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Character States")
+	bool Riding_ = false;
+
 public:
 	FALSStance()
 	{
@@ -87,6 +145,7 @@ public:
 
 	const bool& Standing() const { return Standing_; }
 	const bool& Crouching() const { return Crouching_; }
+	const bool& Riding() const { return Riding_; }
 
 	operator EALSStance() const { return Stance; }
 
@@ -95,6 +154,7 @@ public:
 		Stance = NewStance;
 		Standing_ = Stance == EALSStance::Standing;
 		Crouching_ = Stance == EALSStance::Crouching;
+		Riding_ = Stance == EALSStance::Riding;
 	}
 };
 

@@ -31,9 +31,9 @@ static FORCEINLINE FString GetEnumerationToString(const Enumeration InValue)
 UENUM(BlueprintType)
 enum class EALSGait : uint8
 {
-	Walking,
-	Running,
-	Sprinting
+	Walking UMETA(DisplayName = "Slow"),
+	Running UMETA(DisplayName = "Normal"),
+	Sprinting UMETA(DisplayName = "Fast")
 };
 
 /**
@@ -57,7 +57,9 @@ enum class EALSMovementState : uint8
 {
 	None,
 	Grounded,
-	InAir,
+	Freefall,
+	Flight,
+	Swimming,
 	Mantling,
 	Ragdoll
 };
@@ -94,6 +96,26 @@ enum class EALSRotationMode : uint8
 	Aiming
 };
 
+UENUM(BlueprintType)
+enum class EALSFlightMode : uint8
+{
+	None,
+	Hovering,
+	Aerial,
+};
+
+UENUM(BlueprintType)
+enum class EALSFlightCancelCondition : uint8
+{
+	Disabled UMETA(ToolTip = "Disable any automatic flight cancellation"),
+	AnyHit UMETA(ToolTip = "Any event hit will trigger flight cancellation"),
+	VelocityThreshold UMETA(ToolTip = "Hits on the player must be higher than a threshold to trigger flight cancellation"),
+	Custom UMETA(Tooltip = "CheckFlightInteruption is called to determine if the hit triggers flight cancellation"),
+	CustomOrThreshold UMETA(DisplayName = "Custom or Threshold", Tooltip = "CheckFlightInteruption is called in addition to velocity threshold check. Either will trigger flight cancellation"),
+	CustomAndThreshold UMETA(DisplayName = "Custom and Threshold", Tooltip = "CheckFlightInteruption is called in addition to velocity threshold check. Both returning true will trigger flight cancellation")
+};
+
+
 /**
  * Character stance. Note: Also edit related struct in ALSStructEnumLibrary if you add new enums
  */
@@ -101,7 +123,8 @@ UENUM(BlueprintType)
 enum class EALSStance : uint8
 {
 	Standing,
-	Crouching
+	Crouching,
+	Riding
 };
 
 /**

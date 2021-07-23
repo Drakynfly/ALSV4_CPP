@@ -12,16 +12,16 @@
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "CoreMinimal.h"
-#include "Library/ALSCharacterStructLibrary.h"
 #include "ALSMathLibrary.generated.h"
 
+struct FALSComponentAndTransform;
 class UCapsuleComponent;
 
 /**
  * Math library functions for ALS
  */
 UCLASS()
-class ALSV4_CPP_API UALSMathLibrary : public UBlueprintFunctionLibrary
+class ALSV4_CPP_API UALSMathLibrary final : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
@@ -60,6 +60,5 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Math Utils")
 	static EALSMovementDirection CalculateQuadrant(EALSMovementDirection Current, float FRThreshold, float FLThreshold,
-	                                               float BRThreshold,
-	                                               float BLThreshold, float Buffer, float Angle);
+												   float BRThreshold, float BLThreshold, float Buffer, float Angle);
 };
