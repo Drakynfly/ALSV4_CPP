@@ -135,7 +135,7 @@ void UALSCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			}
 		}
 	}
-	else if (MovementState.InAir())
+	else if (MovementState.Freefall() || MovementState.Flight())
 	{
 		// Do While InAir
 		UpdateInAirValues(DeltaSeconds);
@@ -303,7 +303,7 @@ void UALSCharacterAnimInstance::UpdateLayerValues()
 	LayerBlendingValues.Arm_R_MS = static_cast<float>(1 - FMath::FloorToInt(LayerBlendingValues.Arm_R_LS));
 }
 
-void UALSCharacterAnimInstance::UpdateFootIK(float DeltaSeconds)
+void UALSCharacterAnimInstance::UpdateFootIK(const float DeltaSeconds)
 {
 	FVector FootOffsetLTarget = FVector::ZeroVector;
 	FVector FootOffsetRTarget = FVector::ZeroVector;
@@ -316,7 +316,7 @@ void UALSCharacterAnimInstance::UpdateFootIK(float DeltaSeconds)
 	               IkFootR_BoneName, FootIKValues.FootLock_R_Alpha, FootIKValues.UseFootLockCurve_R,
 	               FootIKValues.FootLock_R_Location, FootIKValues.FootLock_R_Rotation);
 
-	if (MovementState.InAir())
+	if (MovementState.Freefall() || MovementState.Flight())
 	{
 		// Reset IK Offsets if In Air
 		SetPelvisIKOffset(DeltaSeconds, FVector::ZeroVector, FVector::ZeroVector);
@@ -756,7 +756,7 @@ float UALSCharacterAnimInstance::CalculateStandingPlayRate() const
 
 float UALSCharacterAnimInstance::CalculateDiagonalScaleAmount() const
 {
-	// Calculate the Diagnal Scale Amount. This value is used to scale the Foot IK Root bone to make the Foot IK bones
+	// Calculate the Diagonal Scale Amount. This value is used to scale the Foot IK Root bone to make the Foot IK bones
 	// cover more distance on the diagonal blends. Without scaling, the feet would not move far enough on the diagonal
 	// direction due to the linear translational blending of the IK bones. The curve is used to easily map the value.
 	return DiagonalScaleAmountCurve->GetFloatValue(FMath::Abs(VelocityBlend.F + VelocityBlend.B));
@@ -765,7 +765,7 @@ float UALSCharacterAnimInstance::CalculateDiagonalScaleAmount() const
 float UALSCharacterAnimInstance::CalculateCrouchingPlayRate() const
 {
 	// Calculate the Crouching Play Rate by dividing the Character's speed by the Animated Speed.
-	// This value needs to be separate from the standing play rate to improve the blend from crocuh to stand while in motion.
+	// This value needs to be separate from the standing play rate to improve the blend from crouch to stand while in motion.
 	return FMath::Clamp(
 		CharacterInformation.Speed / Config.AnimatedCrouchSpeed / Grounded.StrideBlend / GetOwningComponent()->
 		GetComponentScale().Z,
@@ -776,7 +776,7 @@ float UALSCharacterAnimInstance::CalculateLandPrediction() const
 {
 	// Calculate the land prediction weight by tracing in the velocity direction to find a walkable surface the character
 	// is falling toward, and getting the 'Time' (range of 0-1, 1 being maximum, 0 being about to land) till impact.
-	// The Land Prediction Curve is used to control how the time affects the final weight for a smooth blend. 
+	// The Land Prediction Curve is used to control how the time affects the final weight for a smooth blend.
 	if (InAir.FallSpeed >= -200.0f)
 	{
 		return 0.0f;
@@ -846,7 +846,7 @@ FALSLeanAmount UALSCharacterAnimInstance::CalculateAirLeanAmount() const
 EALSMovementDirection UALSCharacterAnimInstance::CalculateMovementDirection() const
 {
 	// Calculate the Movement Direction. This value represents the direction the character is moving relative to the camera
-	// during the Looking Cirection / Aiming rotation modes, and is used in the Cycle Blending Anim Layers to blend to the
+	// during the Looking Direction / Aiming rotation modes, and is used in the Cycle Blending Anim Layers to blend to the
 	// appropriate directional states.
 	if (Gait.Sprinting() || RotationMode.VelocityDirection())
 	{

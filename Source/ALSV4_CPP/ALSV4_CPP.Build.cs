@@ -3,7 +3,7 @@
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
 // Original Author: Doğa Can Yanıkoğlu
-// Contributors:  
+// Contributors:
 
 using UnrealBuildTool;
 
@@ -23,6 +23,7 @@ public class ALSV4_CPP : ModuleRules
 			"AIModule",
 			"GameplayTasks",
 			"PhysicsCore",
+			"Niagara",
 			"DeveloperSettings"
 		});
 

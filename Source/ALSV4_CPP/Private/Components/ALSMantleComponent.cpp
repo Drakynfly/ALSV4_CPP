@@ -62,13 +62,12 @@ void UALSMantleComponent::BeginPlay()
 	}
 }
 
-
-void UALSMantleComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+void UALSMantleComponent::TickComponent(const float DeltaTime, const ELevelTick TickType,
                                         FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (OwnerCharacter && OwnerCharacter->GetMovementState() == EALSMovementState::InAir)
+	if (OwnerCharacter && OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
 	{
 		// Perform a mantle check if falling while movement input is pressed.
 		if (OwnerCharacter->HasMovementInput())
@@ -78,8 +77,8 @@ void UALSMantleComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 }
 
-void UALSMantleComponent::MantleStart(float MantleHeight, const FALSComponentAndTransform& MantleLedgeWS,
-                                      EALSMantleType MantleType)
+void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSComponentAndTransform& MantleLedgeWS,
+                                      const EALSMantleType MantleType)
 {
 	if (OwnerCharacter == nullptr || !IsValid(MantleLedgeWS.Component) || !IsValid(MantleTimeline))
 	{
@@ -142,7 +141,7 @@ void UALSMantleComponent::MantleStart(float MantleHeight, const FALSComponentAnd
 	MantleTimeline->SetPlayRate(MantleParams.PlayRate);
 	MantleTimeline->PlayFromStart();
 
-	// Step 7: Play the Anim Montaget if valid.
+	// Step 7: Play the Anim Montage if valid.
 	if (IsValid(MantleParams.AnimMontage))
 	{
 		OwnerCharacter->GetMainAnimInstance()->Montage_Play(MantleParams.AnimMontage, MantleParams.PlayRate,
@@ -276,7 +275,7 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 
 	// Step 4: Determine the Mantle Type by checking the movement mode and Mantle Height.
 	EALSMantleType MantleType;
-	if (OwnerCharacter->GetMovementState() == EALSMovementState::InAir)
+	if (OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
 	{
 		MantleType = EALSMantleType::FallingCatch;
 	}
@@ -295,16 +294,16 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 	return true;
 }
 
-void UALSMantleComponent::Server_MantleStart_Implementation(float MantleHeight,
+void UALSMantleComponent::Server_MantleStart_Implementation(const float MantleHeight,
                                                             const FALSComponentAndTransform& MantleLedgeWS,
-                                                            EALSMantleType MantleType)
+                                                            const EALSMantleType MantleType)
 {
 	Multicast_MantleStart(MantleHeight, MantleLedgeWS, MantleType);
 }
 
-void UALSMantleComponent::Multicast_MantleStart_Implementation(float MantleHeight,
+void UALSMantleComponent::Multicast_MantleStart_Implementation(const float MantleHeight,
                                                                const FALSComponentAndTransform& MantleLedgeWS,
-                                                               EALSMantleType MantleType)
+                                                               const EALSMantleType MantleType)
 {
 	if (OwnerCharacter && !OwnerCharacter->IsLocallyControlled())
 	{
@@ -312,7 +311,7 @@ void UALSMantleComponent::Multicast_MantleStart_Implementation(float MantleHeigh
 	}
 }
 
-// This function is called by "MantleTimeline" using BindUFunction in the AALSBaseCharacter::BeginPlay during the default settings initalization.
+// This function is called by "MantleTimeline" using BindUFunction in the AALSBaseCharacter::BeginPlay during the default settings initialization.
 void UALSMantleComponent::MantleUpdate(float BlendIn)
 {
 	if (!OwnerCharacter)
@@ -370,7 +369,7 @@ void UALSMantleComponent::MantleUpdate(float BlendIn)
 		PositionAlpha);
 
 	// Initial Blend In (controlled in the timeline curve) to allow the actor to blend into the Position/Correction
-	// curve at the midoint. This prevents pops when mantling an object lower than the animated mantle.
+	// curve at the midpoint. This prevents pops when mantling an object lower than the animated mantle.
 	const FTransform& LerpedTarget =
 		UKismetMathLibrary::TLerp(UALSMathLibrary::TransfromAdd(MantleTarget, MantleActualStartOffset), ResultLerp,
 		                          BlendIn);
@@ -409,14 +408,14 @@ void UALSMantleComponent::OnOwnerJumpInput()
 				MantleCheck(GroundedTraceSettings, EDrawDebugTrace::Type::ForDuration);
 			}
 		}
-		else if (OwnerCharacter->GetMovementState() == EALSMovementState::InAir)
+		else if (OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
 		{
 			MantleCheck(FallingTraceSettings, EDrawDebugTrace::Type::ForDuration);
 		}
 	}
 }
 
-void UALSMantleComponent::OnOwnerRagdollStateChanged(bool bRagdollState)
+void UALSMantleComponent::OnOwnerRagdollStateChanged(const bool bRagdollState)
 {
 	// If owner is going into ragdoll state, stop mantling immediately
 	if (bRagdollState)

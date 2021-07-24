@@ -3,7 +3,7 @@
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
 // Original Author: Doğa Can Yanıkoğlu
-// Contributors:	Drakynfly
+// Contributors:
 
 #pragma once
 
@@ -11,7 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "ALSPlayerController.generated.h"
 
-class AALSBaseCharacter;
+class AALSPlayerCharacter;
 
 /**
  * Player controller class
@@ -36,5 +36,5 @@ private:
 public:
 	/** Main character reference */
 	UPROPERTY(BlueprintReadOnly, Category = "ALS Player Controller")
-	AALSBaseCharacter* PossessedCharacter = nullptr;
+	AALSPlayerCharacter* PossessedCharacter = nullptr;
 };

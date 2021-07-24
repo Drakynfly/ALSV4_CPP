@@ -9,8 +9,8 @@
 #include "Character/ALSPlayerCameraManager.h"
 
 
-#include "Character/ALSBaseCharacter.h"
 #include "Character/ALSPlayerController.h"
+#include "Character/ALSPlayerCharacter.h"
 #include "Character/Animation/ALSPlayerCameraBehavior.h"
 #include "Components/ALSDebugComponent.h"
 
@@ -31,6 +31,7 @@ const FName NAME_PivotOffset_Z(TEXT("PivotOffset_Z"));
 const FName NAME_RotationLagSpeed(TEXT("RotationLagSpeed"));
 const FName NAME_Weight_FirstPerson(TEXT("Weight_FirstPerson"));
 
+DEFINE_LOG_CATEGORY(LogAlsPlayerCameraManager)
 
 AALSPlayerCameraManager::AALSPlayerCameraManager()
 {
@@ -39,7 +40,7 @@ AALSPlayerCameraManager::AALSPlayerCameraManager()
 	CameraBehavior->bHiddenInGame = true;
 }
 
-void AALSPlayerCameraManager::OnPossess(AALSBaseCharacter* NewCharacter)
+void AALSPlayerCameraManager::OnPossess(AALSPlayerCharacter* NewCharacter)
 {
 	// Set "Controlled Pawn" when Player Controller Possesses new character. (called from Player Controller)
 	check(NewCharacter);
@@ -117,6 +118,7 @@ bool AALSPlayerCameraManager::CustomCameraBehavior(float DeltaTime, FVector& Loc
 {
 	if (!ControlledCharacter)
 	{
+		UE_LOG(LogAlsPlayerCameraManager, Warning, TEXT("Behavior has null Controlled Character"));
 		return false;
 	}
 

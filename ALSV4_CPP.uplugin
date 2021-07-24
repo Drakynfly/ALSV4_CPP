@@ -28,5 +28,11 @@
 				"PhysicsCore"
 			]
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
 	]
 }

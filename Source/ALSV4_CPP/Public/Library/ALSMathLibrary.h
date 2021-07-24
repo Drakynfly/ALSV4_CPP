@@ -12,9 +12,11 @@
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "CoreMinimal.h"
+
+#include "ALSCharacterStructLibrary.h"
+
 #include "ALSMathLibrary.generated.h"
 
-struct FALSComponentAndTransform;
 class UCapsuleComponent;
 
 /**

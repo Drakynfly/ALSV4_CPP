@@ -14,7 +14,9 @@
 
 // forward declarations
 class UALSDebugComponent;
-class AALSBaseCharacter;
+class AALSPlayerCharacter;
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAlsPlayerCameraManager, Log, All)
 
 /**
  * Player camera manager class
@@ -28,7 +30,7 @@ public:
 	AALSPlayerCameraManager();
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
-	void OnPossess(AALSBaseCharacter* NewCharacter);
+	void OnPossess(AALSPlayerCharacter* NewCharacter);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
 	float GetCameraBehaviorParam(FName CurveName) const;
@@ -49,7 +51,7 @@ protected:
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ALS|Camera")
-	AALSBaseCharacter* ControlledCharacter = nullptr;
+	AALSPlayerCharacter* ControlledCharacter = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ALS|Camera")
 	USkeletalMeshComponent* CameraBehavior = nullptr;
