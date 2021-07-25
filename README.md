@@ -23,5 +23,10 @@
 - This fork removes the need for any config file changes. There are now settings availible in Project Settings menu. Setup Axis inputs, trace channels, collision profiles, and more.
 - This fork seperates the functionality for controlling ALSBaseCharacter into a child class: ALSPlayerCharacter. Parent player controlled characters to this class for access to the rest of the input functions (which are renamed to all begin with "Input_").
 
+## Functions To Override In Blueprints
+- There are a few functions you will need to override in blueprints. You will also need to update these functions for every new overlay state you add. These are commented in the C++ code, but are listed here for quick reference as well.
+- In your player character blueprint: **GetGetUpAnimation** & **GetRollAnimation**
+- In the MantleComponent: **GetMantleAsset**
+
 ## License & Contribution
 **Source code** of the plugin is licensed under MIT license, and other developers are encouraged to fork the repository, open issues & pull requests to help the development.
