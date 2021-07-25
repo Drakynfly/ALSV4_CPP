@@ -3,7 +3,7 @@
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
 // Original Author: Doğa Can Yanıkoğlu
-// Contributors:    
+// Contributors:
 
 
 #pragma once
@@ -201,6 +201,9 @@ public:
 	FALSStance Stance = EALSStance::Standing;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Read Only Data|Character Information")
+	FALSFlightMode FlightState = EALSFlightState::None;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Read Only Data|Character Information")
 	FALSOverlayState OverlayState = EALSOverlayState::Default;
 
 protected:
@@ -307,7 +310,7 @@ protected:
 	/** IK Bone Names */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Anim Graph - Foot IK")
 	FName IkFootL_BoneName = NAME_ik_foot_l;
-	
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Anim Graph - Foot IK")
 	FName IkFootR_BoneName = NAME_ik_foot_r;
 

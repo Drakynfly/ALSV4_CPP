@@ -16,7 +16,7 @@ UALSCharacterMovementComponent::UALSCharacterMovementComponent(const FObjectInit
 {
 }
 
-void UALSCharacterMovementComponent::OnMovementUpdated(float DeltaTime, const FVector& OldLocation,
+void UALSCharacterMovementComponent::OnMovementUpdated(const float DeltaTime, const FVector& OldLocation,
                                                        const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaTime, OldLocation, OldVelocity);
@@ -29,15 +29,19 @@ void UALSCharacterMovementComponent::OnMovementUpdated(float DeltaTime, const FV
 	// Set Movement Settings
 	if (bRequestMovementSettingsChange)
 	{
-		const float UpdateMaxWalkSpeed = CurrentMovementSettings.GetSpeedForGait(AllowedGait);
-		MaxWalkSpeed = UpdateMaxWalkSpeed;
-		MaxWalkSpeedCrouched = UpdateMaxWalkSpeed;
+		const float NewMaxSpeed = CurrentMovementSettings.GetSpeedForGait(AllowedGait);
+
+		// Its easier to just bulk set than bother with a switch case.
+		MaxWalkSpeed = NewMaxSpeed;
+		MaxWalkSpeedCrouched = NewMaxSpeed;
+		MaxFlySpeed = NewMaxSpeed;
+		MaxSwimSpeed = NewMaxSpeed;
 
 		bRequestMovementSettingsChange = false;
 	}
 }
 
-void UALSCharacterMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
+void UALSCharacterMovementComponent::PhysWalking(const float DeltaTime, const int32 Iterations)
 {
 	if (CurrentMovementSettings.MovementCurve)
 	{
@@ -45,7 +49,7 @@ void UALSCharacterMovementComponent::PhysWalking(float deltaTime, int32 Iteratio
 		// This allows for fine control over movement behavior at each speed.
 		GroundFriction = CurrentMovementSettings.MovementCurve->GetVectorValue(GetMappedSpeed()).Z;
 	}
-	Super::PhysWalking(deltaTime, Iterations);
+	Super::PhysWalking(DeltaTime, Iterations);
 }
 
 float UALSCharacterMovementComponent::GetMaxAcceleration() const
@@ -70,7 +74,7 @@ float UALSCharacterMovementComponent::GetMaxBrakingDeceleration() const
 	return CurrentMovementSettings.MovementCurve->GetVectorValue(GetMappedSpeed()).Y;
 }
 
-void UALSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags) // Client only
+void UALSCharacterMovementComponent::UpdateFromCompressedFlags(const uint8 Flags) // Client only
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
@@ -113,7 +117,7 @@ uint8 UALSCharacterMovementComponent::FSavedMove_My::GetCompressedFlags() const
 	return Result;
 }
 
-void UALSCharacterMovementComponent::FSavedMove_My::SetMoveFor(ACharacter* Character, float InDeltaTime,
+void UALSCharacterMovementComponent::FSavedMove_My::SetMoveFor(ACharacter* Character, const float InDeltaTime,
                                                                FVector const& NewAccel,
                                                                class FNetworkPredictionData_Client_Character&
                                                                ClientData)
@@ -161,7 +165,16 @@ float UALSCharacterMovementComponent::GetMappedSpeed() const
 	// with 0 = stopped, 1 = the Walk Speed, 2 = the Run Speed, and 3 = the Sprint Speed.
 	// This allows us to vary the movement speeds but still use the mapped range in calculations for consistent results
 
-	const float Speed = Velocity.Size2D();
+	float Speed;
+	if (MovementMode == MOVE_Flying)
+	{
+		Speed = Velocity.Size(); // @todo ehhhh
+	}
+	else
+	{
+		Speed = Velocity.Size2D();
+	}
+
 	const float LocWalkSpeed = CurrentMovementSettings.WalkSpeed;
 	const float LocRunSpeed = CurrentMovementSettings.RunSpeed;
 	const float LocSprintSpeed = CurrentMovementSettings.SprintSpeed;
@@ -179,14 +192,14 @@ float UALSCharacterMovementComponent::GetMappedSpeed() const
 	return FMath::GetMappedRangeValueClamped({0.0f, LocWalkSpeed}, {0.0f, 1.0f}, Speed);
 }
 
-void UALSCharacterMovementComponent::SetMovementSettings(FALSMovementSettings NewMovementSettings)
+void UALSCharacterMovementComponent::SetMovementSettings(const FALSMovementSettings NewMovementSettings)
 {
 	// Set the current movement settings from the owner
 	CurrentMovementSettings = NewMovementSettings;
 	bRequestMovementSettingsChange = true;
 }
 
-void UALSCharacterMovementComponent::SetAllowedGait(EALSGait NewAllowedGait)
+void UALSCharacterMovementComponent::SetAllowedGait(const EALSGait NewAllowedGait)
 {
 	if (AllowedGait != NewAllowedGait)
 	{

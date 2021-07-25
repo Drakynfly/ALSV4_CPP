@@ -244,14 +244,14 @@ void AALSPlayerCharacter::Input_Jump()
 	}
 	else if (MovementState == EALSMovementState::Freefall)
 	{
-		//SetFlightMode(EALSFlightMode::Neutral);
+		SetFlightState(EALSFlightState::Aerial);
 	}
 	else if (MovementState == EALSMovementState::Flight)
 	{
-		//if (FlightMode == EALSFlightMode::Hovering)
-		//{
-		//	SetFlightMode(EALSFlightMode::Aerial);
-		//}
+		if (FlightState == EALSFlightState::Hovering)
+		{
+			SetFlightState(EALSFlightState::Aerial);
+		}
 	}
 	else if (MovementState == EALSMovementState::Ragdoll)
 	{

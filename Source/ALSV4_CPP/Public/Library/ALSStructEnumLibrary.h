@@ -84,7 +84,7 @@ struct FALSFlightMode
 
 private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
-	EALSFlightMode FlightMode = EALSFlightMode::None;
+	EALSFlightState FlightMode = EALSFlightState::None;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "ALS|Flight Mode")
 	bool None_ = true;
@@ -101,20 +101,20 @@ public:
 
 	}
 
-	FALSFlightMode(const EALSFlightMode InitialFlightMode) { *this = InitialFlightMode; }
+	FALSFlightMode(const EALSFlightState InitialFlightMode) { *this = InitialFlightMode; }
 
 	const bool& None() const { return None_; }
 	const bool& Hovering() const { return Hovering_; }
 	const bool& Aerial() const { return Aerial_; }
 
-	operator EALSFlightMode() const { return FlightMode; }
+	operator EALSFlightState() const { return FlightMode; }
 
-	void operator=(const EALSFlightMode InitialFlightMode)
+	void operator=(const EALSFlightState InitialFlightMode)
 	{
 		FlightMode = InitialFlightMode;
-		None_ = FlightMode == EALSFlightMode::None;
-		Hovering_ = FlightMode == EALSFlightMode::Hovering;
-		Aerial_ = FlightMode == EALSFlightMode::Aerial;
+		None_ = FlightMode == EALSFlightState::None;
+		Hovering_ = FlightMode == EALSFlightState::Hovering;
+		Aerial_ = FlightMode == EALSFlightState::Aerial;
 	}
 };
 

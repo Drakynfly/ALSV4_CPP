@@ -56,6 +56,11 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved,
+					FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
+					const FHitResult& Hit) override;
+
+	// We are overriding this to implement custom handling for flight logic.
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce = false) override;
 
 	/** Ragdoll System */
@@ -115,6 +120,15 @@ public:
 	EALSRotationMode GetRotationMode() const { return RotationMode; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
+	void SetFlightState(EALSFlightState NewFlightState);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
+	void Server_SetFlightState(EALSFlightState NewFlightState);
+
+	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
+	EALSFlightState GetFlightState() const { return FlightState; }
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
 	void SetOverlayState(EALSOverlayState NewState);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
@@ -122,9 +136,6 @@ public:
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSOverlayState GetOverlayState() const { return OverlayState; }
-
-	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
-	EALSOverlayState SwitchRight() const { return OverlayState; }
 
 	/** Landed, Jumped, Rolling, Mantling and Ragdoll*/
 	/** On Landed*/
@@ -241,6 +252,21 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "ALS|Movement System")
 	UAnimMontage* GetRollAnimation();
 
+	/** Flight System */
+
+	/** This can be overriden to setup custom conditions for allowing character flight. */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "ALS|Flight")
+	virtual bool CanFly() const;
+
+	/** This can be overriden to setup custom conditions for allowing character flight from blueprint. */
+	UFUNCTION(BlueprintImplementableEvent, BlueprintPure = false, Category = "ALS|Flight")
+	bool FlightCheck() const;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
+	bool FlightInterruptCheck(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp,
+								bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
+								const FHitResult& Hit) const;
+
 	/** Utility */
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Utility")
@@ -315,6 +341,8 @@ protected:
 
 	virtual void OnRotationModeChanged(EALSRotationMode PreviousRotationMode);
 
+	virtual void OnFlightStateChanged(EALSFlightState PreviousFlightState);
+
 	virtual void OnGaitChanged(EALSGait PreviousGait);
 
 	virtual void OnOverlayStateChanged(EALSOverlayState PreviousState);
@@ -335,17 +363,31 @@ protected:
 
 	void UpdateCharacterMovement();
 
+	void UpdateFlightMovement(float DeltaTime);
+
 	void UpdateGroundedRotation(float DeltaTime);
 
 	virtual bool LimitGroundedRotation() const { return false; }
 
-	void UpdateInAirRotation(float DeltaTime);
+	void UpdateFallingRotation(float DeltaTime);
+
+	void UpdateFlightRotation(float DeltaTime);
+
+	void UpdateSwimmingRotation(float DeltaTime);
 
 	/** Utils */
+
+	// Gets the relative altitude of the player, measuring down to a point below the character.
+	UFUNCTION(BlueprintCallable, Category = "ALS|Flight")
+	float FlightDistanceCheck(float CheckDistance, FVector Direction) const;
 
 	void SmoothCharacterRotation(FRotator Target, float TargetInterpSpeed, float ActorInterpSpeed, float DeltaTime);
 
 	float CalculateGroundedRotationRate() const;
+
+	float CalculateFlightRotationRate() const;
+
+	void UpdateRelativeAltitude();
 
 	void LimitRotation(float AimYawMin, float AimYawMax, float InterpSpeed, float DeltaTime);
 
@@ -354,6 +396,9 @@ protected:
 	/** Replication */
 	UFUNCTION(Category = "ALS|Replication")
 	void OnRep_RotationMode(EALSRotationMode PrevRotMode);
+
+	UFUNCTION(Category = "ALS|Replication")
+	void OnRep_FlightState(EALSFlightState PrevFlightState);
 
 	UFUNCTION(Category = "ALS|Replication")
 	void OnRep_OverlayState(EALSOverlayState PrevOverlayState);
@@ -374,7 +419,7 @@ protected:
 	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "ALS|Input")
 	EALSGait DesiredGait = EALSGait::Running;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "ALS|Input")
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "ALS|Input")
 	EALSStance DesiredStance = EALSStance::Standing;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
@@ -402,8 +447,32 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Movement System")
 	FDataTableRowHandle MovementModel;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Movement System")
-	float MaxFlightForwardAngle = 45;
+	/** Flight */
+
+	// Flag to enable flight.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
+	bool bFlightEnabled = false;
+
+	// Flag to call CanFly() per tick. This will disable flight in midair on a false return. When disabled, CanFly() will
+	// only be called on takeoff.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
+	bool AlwaysCheckFlightConditions = false;
+
+	// Should FlightInterruptCheck be used to determine if flight should be interrupted when colliding in midair.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
+	bool UseFlightInterrupt = true;
+
+	// The velocity of the hit required to trigger a positive FlightInterruptThresholdCheck.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
+	float FlightInterruptThreshold = 600;
+
+	// The max degree that flight input will consider forward.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Flight", Meta = (UIMin = 0, UIMax = 90))
+	float MaxFlightForwardAngle = 85;
+
+	// Maximum rotation in Yaw, Pitch and Roll, that may be achieved in flight.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Flight")
+	FVector MaxFlightLean = {40, 40, 0};
 
 	/** Essential Information */
 
@@ -460,6 +529,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_RotationMode)
 	EALSRotationMode RotationMode = EALSRotationMode::LookingDirection;
 
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_FlightState)
+	EALSFlightState FlightState = EALSFlightState::None;
+
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
 	EALSGait Gait = EALSGait::Walking;
 
@@ -493,6 +565,10 @@ protected:
 	        "bBreakfallOnLand"))
 	float BreakfallOnLandVelocity = 600.0f;
 
+	/** Flag to tell the breakfall system to activate the next time the character lands. This will set to false immediately after. */
+	UPROPERTY(BlueprintReadWrite, Category = "ALS|Breakfall System")
+	bool bBreakFallNextLanding = false;
+
 	/** Ragdoll System */
 
 	/** If the skeleton uses a reversed pelvis bone, flip the calculation operator */
@@ -508,8 +584,13 @@ protected:
 	        "bRagdollOnLand"))
 	float RagdollOnLandVelocity = 1000.0f;
 
+	/** Is the current ragdoll state grounded */
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Ragdoll System")
-	bool bRagdollOnGround = false;
+	bool bIsRagdollingOnGround = false;
+
+	/** If player starts to freefall while rolling, switch to ragdoll state */
+	UPROPERTY(BlueprintReadWrite, Category = "ALS|Ragdoll System")
+	bool bRagdollOnRollfall = false;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Ragdoll System")
 	bool bRagdollFaceUp = false;
@@ -534,6 +615,13 @@ protected:
 	FVector PreviousVelocity = FVector::ZeroVector;
 
 	float PreviousAimYaw = 0.0f;
+
+	// Altitude variables for flight calculations.
+	float SeaAltitude = 0; // @todo essentially global. move to struct
+	float TroposphereHeight = 0; // @todo essentially global. move to struct
+
+	float RelativeAltitude = 0;
+	float AbsoluteAltitude = 0;
 
 	float AtmosphereAtAltitude = 1;
 

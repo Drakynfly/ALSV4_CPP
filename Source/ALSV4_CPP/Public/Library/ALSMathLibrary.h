@@ -8,11 +8,10 @@
 
 #pragma once
 
-#include "ALSCharacterEnumLibrary.h"
-
 #include "Kismet/KismetSystemLibrary.h"
 #include "CoreMinimal.h"
 
+#include "ALSCharacterEnumLibrary.h"
 #include "ALSCharacterStructLibrary.h"
 
 #include "ALSMathLibrary.generated.h"
