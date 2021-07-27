@@ -58,6 +58,10 @@ void UALSMantleComponent::BeginPlay()
 				this, &UALSMantleComponent::OnOwnerRagdollStateChanged);
 
 			DebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
+
+			// Adjust for seamless vaulting. Ensures that the auto-vault will always trigger at the height that stepping up cuts out.
+			// @todo this does not adjust if MaxStepHeight is changed at runtime
+			AutomaticTraceSettings.MinLedgeHeight = OwnerCharacter->GetCharacterMovement()->MaxStepHeight;
 		}
 	}
 }
@@ -67,12 +71,23 @@ void UALSMantleComponent::TickComponent(const float DeltaTime, const ELevelTick 
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (OwnerCharacter && OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
+	if (OwnerCharacter)
 	{
-		// Perform a mantle check if falling while movement input is pressed.
-		if (OwnerCharacter->HasMovementInput())
+		if (OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
 		{
-			MantleCheck(FallingTraceSettings, EDrawDebugTrace::Type::ForOneFrame);
+			// Perform a mantle check if falling.
+			if (OwnerCharacter->HasMovementInput() || bAlwaysCatchIfFalling)
+			{
+				MantleCheck(FallingTraceSettings, EDrawDebugTrace::Type::ForOneFrame);
+			}
+		}
+		else if (OwnerCharacter->GetMovementState() == EALSMovementState::Grounded)
+		{
+			// Perform a mantle check to detect short obstacles to auto-mantle.
+			if (OwnerCharacter->HasMovementInput() && AutomaticallyVaultSmallObstacles)
+			{
+				MantleCheck(AutomaticTraceSettings, EDrawDebugTrace::Type::ForOneFrame);
+			}
 		}
 	}
 }
@@ -311,7 +326,6 @@ void UALSMantleComponent::Multicast_MantleStart_Implementation(const float Mantl
 	}
 }
 
-// This function is called by "MantleTimeline" using BindUFunction in the AALSBaseCharacter::BeginPlay during the default settings initialization.
 void UALSMantleComponent::MantleUpdate(float BlendIn)
 {
 	if (!OwnerCharacter)

@@ -10,6 +10,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TimelineComponent.h"
+#include "Data/ALSMovementSettingsPreset.h"
 #include "Library/ALSCharacterEnumLibrary.h"
 #include "Library/ALSCharacterStructLibrary.h"
 #include "Engine/DataTable.h"
@@ -230,6 +231,15 @@ public:
 	FALSMovementSettings GetTargetMovementSettings() const;
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
+	void AddMovementModifier(const FALSMovementModifier Modifier);
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
+	void RemoveMovementModifier(const FName ModifierID);
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
+	void SetMovementModifierTime(const FName ModifierID, const float Time);
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
 	EALSGait GetAllowedGait() const;
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
@@ -391,8 +401,6 @@ protected:
 
 	void LimitRotation(float AimYawMin, float AimYawMax, float InterpSpeed, float DeltaTime);
 
-	void SetMovementModel();
-
 	/** Replication */
 	UFUNCTION(Category = "ALS|Replication")
 	void OnRep_RotationMode(EALSRotationMode PrevRotMode);
@@ -441,11 +449,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_OverlayState)
 	EALSOverlayState OverlayState = EALSOverlayState::Default;
-
-	/** Movement System */
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Movement System")
-	FDataTableRowHandle MovementModel;
 
 	/** Flight */
 
@@ -540,8 +543,8 @@ protected:
 
 	/** Movement System */
 
-	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
-	FALSMovementStateSettings MovementData;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Movement System")
+	TObjectPtr<UALSMovementSettingsPreset> MovementData;
 
 	/** Rotation System */
 
@@ -624,6 +627,8 @@ protected:
 	float AbsoluteAltitude = 0;
 
 	float AtmosphereAtAltitude = 1;
+
+	TArray<FALSMovementModifier> MovementModifiers;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Utility")
 	UALSCharacterAnimInstance* MainAnimInstance = nullptr;

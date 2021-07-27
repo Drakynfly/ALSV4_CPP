@@ -51,7 +51,7 @@ public:
 	FALSMantleAsset GetMantleAsset(EALSMantleType MantleType, EALSOverlayState CurrentOverlayState);
 
 protected:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, 
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
 	// Called when the game starts
@@ -108,6 +108,14 @@ protected:
 	/** If a dynamic object has a velocity bigger than this value, do not start mantle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
 	float AcceptableVelocityWhileMantling = 10.0f;
+
+	/**  Enables automatically vaulting over small obstacles, when moving toward them. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
+	bool AutomaticallyVaultSmallObstacles = true;
+
+	/** Enables always performing falling checks with no movement input. */
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ALS|Mantle System")
+	bool bAlwaysCatchIfFalling = true;
 
 private:
 	UPROPERTY()

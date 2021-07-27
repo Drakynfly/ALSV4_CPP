@@ -3,7 +3,7 @@
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
 // Original Author: Doğa Can Yanıkoğlu
-// Contributors:    
+// Contributors:
 
 
 #include "Character/ALSPlayerCameraManager.h"
@@ -68,7 +68,7 @@ void AALSPlayerCameraManager::OnPossess(AALSPlayerCharacter* NewCharacter)
 	DebugComponent = ControlledCharacter->FindComponentByClass<UALSDebugComponent>();
 }
 
-float AALSPlayerCameraManager::GetCameraBehaviorParam(FName CurveName) const
+float AALSPlayerCameraManager::GetCameraBehaviorParam(const FName CurveName) const
 {
 	UAnimInstance* Inst = CameraBehavior->GetAnimInstance();
 	if (Inst)
@@ -78,7 +78,7 @@ float AALSPlayerCameraManager::GetCameraBehaviorParam(FName CurveName) const
 	return 0.0f;
 }
 
-void AALSPlayerCameraManager::UpdateViewTargetInternal(FTViewTarget& OutVT, float DeltaTime)
+void AALSPlayerCameraManager::UpdateViewTargetInternal(FTViewTarget& OutVT, const float DeltaTime)
 {
 	// Partially taken from base class
 
@@ -108,9 +108,9 @@ void AALSPlayerCameraManager::UpdateViewTargetInternal(FTViewTarget& OutVT, floa
 	}
 }
 
-FVector AALSPlayerCameraManager::CalculateAxisIndependentLag(FVector CurrentLocation, FVector TargetLocation,
-                                                             FRotator CameraRotation, FVector LagSpeeds,
-                                                             float DeltaTime)
+FVector AALSPlayerCameraManager::CalculateAxisIndependentLag(const FVector CurrentLocation, const FVector TargetLocation,
+                                                             FRotator CameraRotation, const FVector LagSpeeds,
+                                                             const float DeltaTime)
 {
 	CameraRotation.Roll = 0.0f;
 	CameraRotation.Pitch = 0.0f;

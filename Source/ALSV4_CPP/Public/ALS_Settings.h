@@ -14,34 +14,6 @@ class ALSV4_CPP_API UALS_Settings final : public UDeveloperSettings
 	GENERATED_BODY()
 
 public:
-	// The collision profile preset for the character.
-	UPROPERTY(EditAnywhere, Config, Category = "General")
-	FName ALS_Profile;
-
-	// Axis input for forward and backward movement. You should probably bind this one.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName X_Axis_Input;
-
-	// Axis input for left and right movement. Good idea to bind this one too.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName Y_Axis_Input;
-
-	// Axis input for vertical movement. Only bind this one if you want to utilize the flight or swimming controls.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName Z_Axis_Input;
-
-	// Vertical camera input axis.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName Pitch_Input;
-
-	// Horizontal camera input axis.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName Yaw_Input;
-
-	// Camera spin controls. Lmao, this is funny to mess with but not very useful, unless you are trying something really crazy.
-	UPROPERTY(EditAnywhere, Config, Category = "Input")
-	FName Roll_Input;
-
 	/**
 	* This is the channel that the mantle check function will use to determine if something can be mantled.
 	* WorldStatic will work fine, or you can create a custom channel for more precise control.

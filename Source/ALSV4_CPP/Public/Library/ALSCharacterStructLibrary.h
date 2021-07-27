@@ -9,6 +9,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "Curves/CurveVector.h" // @todo remove
+
 #include "Engine/DataTable.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Materials/MaterialInterface.h"
@@ -42,7 +45,7 @@ struct FALSCameraSettings
 	float TargetArmLength = 0.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
-	FVector SocketOffset;
+	FVector SocketOffset = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float LagSpeed = 0.0f;
@@ -209,7 +212,6 @@ struct FALSMovementStanceSettings
 	UPROPERTY(EditAnywhere, Category = "Movement Settings")
 	FALSMovementSettings Crouching;
 
-
 	// These are not stances, per se, but they fix the best here. I do not like this, but the other option is to have a
 	// new struct or many more entries in FALSMovementStateSettings. I consider this a workable solution only becuase
 	// this struct isnt used anywhere else.
@@ -219,21 +221,6 @@ struct FALSMovementStanceSettings
 
 	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
 	FALSMovementSettings Swimming;
-};
-
-USTRUCT(BlueprintType)
-struct FALSMovementStateSettings : public FTableRowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Movement Settings")
-	FALSMovementStanceSettings VelocityDirection;
-
-	UPROPERTY(EditAnywhere, Category = "Movement Settings")
-	FALSMovementStanceSettings LookingDirection;
-
-	UPROPERTY(EditAnywhere, Category = "Movement Settings")
-	FALSMovementStanceSettings Aiming;
 };
 
 USTRUCT(BlueprintType)
@@ -266,56 +253,119 @@ struct FALSHitFX : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Surface")
-	TEnumAsByte<EPhysicalSurface> SurfaceType;
+	TEnumAsByte<EPhysicalSurface> SurfaceType = SurfaceType_Default;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TSoftObjectPtr<USoundBase> Sound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	EALSSpawnType SoundSpawnType;
+	EALSSpawnType SoundSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Sound", meta = (EditCondition = "SoundSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> SoundAttachmentType;
+	TEnumAsByte<EAttachLocation::Type> SoundAttachmentType = EAttachLocation::KeepRelativeOffset;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	FVector SoundLocationOffset;
+	FVector SoundLocationOffset = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	FRotator SoundRotationOffset;
+	FRotator SoundRotationOffset = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
 	TSoftObjectPtr<UMaterialInterface> DecalMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
-	EALSSpawnType DecalSpawnType;
+	EALSSpawnType DecalSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Decal", meta = (EditCondition = "DecalSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> DecalAttachmentType;
+	TEnumAsByte<EAttachLocation::Type> DecalAttachmentType = EAttachLocation::KeepRelativeOffset;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
 	float DecalLifeSpan = 10.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
-	FVector DecalSize;
+	FVector DecalSize = FVector::OneVector;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
-	FVector DecalLocationOffset;
+	FVector DecalLocationOffset = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
-	FRotator DecalRotationOffset;
+	FRotator DecalRotationOffset = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
 	TSoftObjectPtr<class UNiagaraSystem> NiagaraSystem;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
-	EALSSpawnType NiagaraSpawnType;
+	EALSSpawnType NiagaraSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara", meta = (EditCondition = "NiagaraSpawnType == EALSSpawnType::Attached"))
 	TEnumAsByte<EAttachLocation::Type> NiagaraAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
-	FVector NiagaraLocationOffset;
+	FVector NiagaraLocationOffset = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
-	FRotator NiagaraRotationOffset;
+	FRotator NiagaraRotationOffset = FRotator::ZeroRotator;
+};
+
+
+USTRUCT(BlueprintType)
+struct FALSMovementModifier
+{
+	GENERATED_BODY()
+
+	FALSMovementModifier()
+	{
+	}
+
+	FALSMovementModifier(const FName ModifierID)
+	  : ModifierID(ModifierID)
+	{
+	}
+
+private:
+	FVector Values = FVector::ZeroVector;
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Movement Modifier")
+	FName ModifierID;
+
+	UPROPERTY(EditAnywhere, Category = "Movement Modifier")
+	TObjectPtr<UCurveVector> Affect = nullptr;
+
+	void SetTime(const float Time)
+	{
+		Values = Affect->GetVectorValue(Time);
+	}
+
+	void ApplyModifier(FALSMovementSettings& Settings, const EALSMovementState MovementState)
+	{
+		if (MovementState == EALSMovementState::Grounded)
+		{
+			Settings.WalkSpeed *= Values.X;
+			Settings.RunSpeed *= Values.X;
+			Settings.SprintSpeed *= Values.X;
+		}
+		else if (MovementState == EALSMovementState::Flight)
+		{
+			Settings.WalkSpeed *= Values.Y;
+            Settings.RunSpeed *= Values.Y;
+            Settings.SprintSpeed *= Values.Y;
+		}
+		else if (MovementState == EALSMovementState::Swimming)
+		{
+			Settings.WalkSpeed *= Values.Z;
+			Settings.RunSpeed *= Values.Z;
+			Settings.SprintSpeed *= Values.Z;
+		}
+	}
+
+	friend bool operator==(const FALSMovementModifier& Lhs, const FALSMovementModifier& RHS)
+	{
+		return Lhs.ModifierID == RHS.ModifierID;
+	}
+
+	friend bool operator!=(const FALSMovementModifier& Lhs, const FALSMovementModifier& RHS)
+	{
+		return !(Lhs == RHS);
+	}
 };

@@ -118,9 +118,6 @@ void AALSBaseCharacter::BeginPlay()
 	// Make sure the mesh and animbp update after the CharacterBP to ensure it gets the most recent values.
 	GetMesh()->AddTickPrerequisiteActor(this);
 
-	// Set the Movement Model
-	SetMovementModel();
-
 	// Once, force set variables in anim bp. This ensures anim instance & character starts synchronized
 	FALSAnimCharacterInformation& AnimData = MainAnimInstance->GetCharacterInformationMutable();
 	MainAnimInstance->Gait = DesiredGait;
@@ -580,15 +577,6 @@ void AALSBaseCharacter::SetActorLocationAndTargetRotation(const FVector NewLocat
 	TargetRotation = NewRotation;
 }
 
-void AALSBaseCharacter::SetMovementModel()
-{
-	const FString ContextString = GetFullName();
-	FALSMovementStateSettings* OutRow =
-		MovementModel.DataTable->FindRow<FALSMovementStateSettings>(MovementModel.RowName, ContextString);
-	check(OutRow);
-	MovementData = *OutRow;
-}
-
 void AALSBaseCharacter::SetHasMovementInput(const bool bNewHasMovementInput)
 {
 	bHasMovementInput = bNewHasMovementInput;
@@ -598,39 +586,54 @@ void AALSBaseCharacter::SetHasMovementInput(const bool bNewHasMovementInput)
 // @todo i dont like this way
 FALSMovementSettings AALSBaseCharacter::GetTargetMovementSettings() const
 {
-	if (RotationMode == EALSRotationMode::VelocityDirection)
+	check(MovementData);
+
+	FALSMovementStanceSettings* StanceSettings = nullptr;
+
+	if		(RotationMode == EALSRotationMode::VelocityDirection)	StanceSettings = &MovementData->VelocityDirection;
+	else if (RotationMode == EALSRotationMode::LookingDirection)	StanceSettings = &MovementData->LookingDirection;
+	else if (RotationMode == EALSRotationMode::Aiming)				StanceSettings = &MovementData->Aiming;
+
+	FALSMovementSettings Settings;
+
+	if (MovementState == EALSMovementState::Grounded)
 	{
-		if (MovementState == EALSMovementState::Grounded)
-		{
-			if (Stance == EALSStance::Standing) { return MovementData.VelocityDirection.Standing; }
-			if (Stance == EALSStance::Crouching) { return MovementData.VelocityDirection.Crouching; }
-		}
-		if (MovementState == EALSMovementState::Flight) { return MovementData.VelocityDirection.Flying; }
-		if (MovementState == EALSMovementState::Swimming) { return MovementData.VelocityDirection.Swimming; }
+		if (Stance == EALSStance::Standing)					Settings = StanceSettings->Standing;
+		if (Stance == EALSStance::Crouching)				Settings = StanceSettings->Crouching;
 	}
-	else if (RotationMode == EALSRotationMode::LookingDirection)
+	else if (MovementState == EALSMovementState::Flight)	Settings = StanceSettings->Flying;
+	else if (MovementState == EALSMovementState::Swimming)	Settings = StanceSettings->Swimming;
+	else													Settings = StanceSettings->Standing; // Default;
+
+	for (auto Modifier : MovementModifiers)
 	{
-		if (MovementState == EALSMovementState::Grounded)
-		{
-			if (Stance == EALSStance::Standing) { return MovementData.LookingDirection.Standing; }
-			if (Stance == EALSStance::Crouching) { return MovementData.LookingDirection.Crouching; }
-		}
-		if (MovementState == EALSMovementState::Flight) { return MovementData.LookingDirection.Flying; }
-		if (MovementState == EALSMovementState::Swimming) { return MovementData.LookingDirection.Swimming; }
-	}
-	else if (RotationMode == EALSRotationMode::Aiming)
-	{
-		if (MovementState == EALSMovementState::Grounded)
-		{
-			if (Stance == EALSStance::Standing) { return MovementData.Aiming.Standing; }
-			if (Stance == EALSStance::Crouching) { return MovementData.Aiming.Crouching; }
-		}
-		if (MovementState == EALSMovementState::Flight) { return MovementData.Aiming.Flying; }
-		if (MovementState == EALSMovementState::Swimming) { return MovementData.Aiming.Swimming; }
+		Modifier.ApplyModifier(Settings, MovementState);
 	}
 
-	// Default to velocity dir standing
-	return MovementData.VelocityDirection.Standing;
+	return Settings;
+}
+
+void AALSBaseCharacter::AddMovementModifier(const FALSMovementModifier Modifier)
+{
+	MovementModifiers.AddUnique(Modifier);
+	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+}
+
+void AALSBaseCharacter::RemoveMovementModifier(const FName ModifierID)
+{
+	MovementModifiers.Remove(ModifierID);
+	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+}
+
+void AALSBaseCharacter::SetMovementModifierTime(const FName ModifierID, const float Time)
+{
+	auto Modifier = MovementModifiers.FindByKey(ModifierID);
+
+	if (Modifier)
+	{
+		Modifier->SetTime(Time);
+		MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+	}
 }
 
 bool AALSBaseCharacter::CanSprint() const
@@ -1244,7 +1247,6 @@ void AALSBaseCharacter::UpdateFallingRotation(const float DeltaTime)
 	}
 }
 
-
 void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 {
 	const float SpeedCache = GetMyMovementComponent()->GetMappedSpeed();
@@ -1259,28 +1261,46 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 	const float RotationAlpha = Alpha_Altitude * (SpeedCache / 3);
 
 	// Calculate input leaning.
-	const FVector Lean = FVector(0); //Acceleration * MaxFlightLean * RotationAlpha;
+	const FVector Lean = GetActorRotation().UnrotateVector(GetMovementInput().GetSafeNormal()) * MaxFlightLean * RotationAlpha;
 
 	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, Lean.X * -1, DeltaTime, FlightRotationRate);
 	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, Lean.Y, DeltaTime, FlightRotationRate);
 
-	if (bHasMovementInput)
+	const bool bCanUpdateMovingRot = ((bIsMoving && bHasMovementInput) || Speed > 150.0f) && !HasAnyRootMotion();
+	if (bCanUpdateMovingRot)
 	{
-		if (RotationMode == EALSRotationMode::Aiming)
+		if (RotationMode == EALSRotationMode::VelocityDirection)
 		{
-			// Aiming Rotation
-			SmoothCharacterRotation({Pitch, AimingRotation.Yaw, Roll / 2}, 0.0f, FlightRotationRate, DeltaTime);
-		}
-		else
-		{
-			// Velocity / Looking Direction Rotation
+			// Velocity Rotation
 			const float InterpSpeed = FMath::GetMappedRangeValueClamped({0, 3}, {0.1, FlightRotationRate}, SpeedCache);
-			SmoothCharacterRotation({Pitch, AimingRotation.Yaw, Roll}, 0.0f, InterpSpeed, DeltaTime);
+			SmoothCharacterRotation({Pitch, LastVelocityRotation.Yaw, Roll}, 100.0f, InterpSpeed, DeltaTime);
+		}
+		else if (RotationMode == EALSRotationMode::LookingDirection)
+		{
+			// Looking Direction Rotation
+			float YawValue;
+			if (Gait == EALSGait::Sprinting)
+			{
+				YawValue = LastVelocityRotation.Yaw;
+			}
+			else
+			{
+				// Walking or Running..
+				const float YawOffsetCurveVal = MainAnimInstance->GetCurveValue(NAME_YawOffset);
+				YawValue = AimingRotation.Yaw + YawOffsetCurveVal;
+			}
+			SmoothCharacterRotation({Pitch, YawValue, Roll}, 100.0f, FlightRotationRate, DeltaTime);
+		}
+		else if (RotationMode == EALSRotationMode::Aiming)
+		{
+			// Aiming Rotation and looking direction
+			const float FinalRoll = Roll + AimingRotation.Roll / 2;
+			SmoothCharacterRotation({Pitch, AimingRotation.Yaw, FinalRoll}, 500.0f, FlightRotationRate, DeltaTime);
 		}
 	}
 	else
 	{
-		SmoothCharacterRotation({0, GetActorRotation().Yaw, 0}, 0.0f, FlightRotationRate, DeltaTime);
+			SmoothCharacterRotation({0, GetActorRotation().Yaw, 0}, 500.0f, FlightRotationRate, DeltaTime);
 	}
 
 	InAirRotation = GetActorRotation();

@@ -56,7 +56,7 @@ float UALSCharacterMovementComponent::GetMaxAcceleration() const
 {
 	// Update the Acceleration using the Movement Curve.
 	// This allows for fine control over movement behavior at each speed.
-	if (!IsMovingOnGround() || !CurrentMovementSettings.MovementCurve)
+	if (IsFalling() || !CurrentMovementSettings.MovementCurve)
 	{
 		return Super::GetMaxAcceleration();
 	}
@@ -67,11 +67,11 @@ float UALSCharacterMovementComponent::GetMaxBrakingDeceleration() const
 {
 	// Update the Deceleration using the Movement Curve.
 	// This allows for fine control over movement behavior at each speed.
-	if (!IsMovingOnGround() || !CurrentMovementSettings.MovementCurve)
+	if (IsFalling() || !CurrentMovementSettings.MovementCurve)
 	{
 		return Super::GetMaxBrakingDeceleration();
 	}
-	return CurrentMovementSettings.MovementCurve->GetVectorValue(GetMappedSpeed()).Y;
+	return CurrentMovementSettings.	MovementCurve->GetVectorValue(GetMappedSpeed()).Y;
 }
 
 void UALSCharacterMovementComponent::UpdateFromCompressedFlags(const uint8 Flags) // Client only
@@ -215,9 +215,11 @@ void UALSCharacterMovementComponent::SetAllowedGait(const EALSGait NewAllowedGai
 		}
 		if (!PawnOwner->HasAuthority())
 		{
-			const float UpdateMaxWalkSpeed = CurrentMovementSettings.GetSpeedForGait(AllowedGait);
-			MaxWalkSpeed = UpdateMaxWalkSpeed;
-			MaxWalkSpeedCrouched = UpdateMaxWalkSpeed;
+			const float NewMaxSpeed = CurrentMovementSettings.GetSpeedForGait(AllowedGait);
+			MaxWalkSpeed = NewMaxSpeed;
+			MaxWalkSpeedCrouched = NewMaxSpeed;
+			MaxFlySpeed = NewMaxSpeed;
+			MaxSwimSpeed = NewMaxSpeed;
 		}
 	}
 }
