@@ -21,20 +21,27 @@ class ALSV4_CPP_API AALSPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+	/*
+	 * Project Faerie has its own base player controller class, and so cannot use this one. The following code, alongside
+	 * the accompanying code in the cpp file, should be copied from here to that class (and integrated as necessary),
+	 * and updated if this changes.
+	 */
+
+	/*** BEGIN CODE COPIED FROM AALSPLAYERCONTROLLER ***/
+
 public:
 	virtual void OnPossess(APawn* NewPawn) override;
-
 	virtual void OnRep_Pawn() override;
-
 	virtual void BeginPlayingState() override;
 
 private:
 	void SetupCamera();
-
 	void SetupDebugInputs();
-	
+
 public:
 	/** Main character reference */
 	UPROPERTY(BlueprintReadOnly, Category = "ALS Player Controller")
 	AALSPlayerCharacter* PossessedCharacter = nullptr;
+
+	/*** END CODE COPIED FROM AALSPLAYERCONTROLLER ***/
 };

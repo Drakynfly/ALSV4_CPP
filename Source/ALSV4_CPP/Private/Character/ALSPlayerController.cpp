@@ -12,6 +12,8 @@
 #include "Components/ALSDebugComponent.h"
 #include "Kismet/GameplayStatics.h"
 
+/*** BEGIN CODE COPIED FROM AALSPLAYERCONTROLLER ***/
+
 void AALSPlayerController::OnPossess(APawn* NewPawn)
 {
 	Super::OnPossess(NewPawn);
@@ -75,3 +77,5 @@ void AALSPlayerController::SetupDebugInputs()
 		}
 	}
 }
+
+/*** END CODE COPIED FROM AALSPLAYERCONTROLLER ***/
