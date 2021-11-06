@@ -615,8 +615,11 @@ FALSMovementSettings AALSBaseCharacter::GetTargetMovementSettings() const
 
 void AALSBaseCharacter::AddMovementModifier(const FALSMovementModifier Modifier)
 {
-	MovementModifiers.AddUnique(Modifier);
-	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+	if (Modifier.IsValid())
+	{
+		MovementModifiers.AddUnique(Modifier);
+		MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+	}
 }
 
 void AALSBaseCharacter::RemoveMovementModifier(const FName ModifierID)

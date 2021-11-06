@@ -368,4 +368,9 @@ public:
 	{
 		return !(Lhs == RHS);
 	}
+
+	bool IsValid() const
+	{
+		return !Affect.IsNull();
+	}
 };
