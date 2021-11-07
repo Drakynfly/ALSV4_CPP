@@ -671,16 +671,21 @@ bool AALSBaseCharacter::CanSprint() const
 
 bool AALSBaseCharacter::CanFly() const
 {
-	return FlightCheck()
-		&& bFlightEnabled;
-		// @todo
-		//&& FMath::IsWithin(Temperature, FlightTempBounds.X, FlightTempBounds.Y)
-		//&& EffectiveWeight < FlightWeightCutOff;
+	return MyCharacterMovementComponent->CanEverFly() && FlightCheck();
+}
+
+bool AALSBaseCharacter::FlightCheck_Implementation() const
+{
+	return true;
+	// @todo
+	//&& FMath::IsWithin(Temperature, FlightTempBounds.X, FlightTempBounds.Y)
+	//&& EffectiveWeight < FlightWeightCutOff;
 }
 
 bool AALSBaseCharacter::FlightInterruptCheck_Implementation(UPrimitiveComponent* MyComp, AActor* Other,
-	UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
-	const FHitResult& Hit) const
+                                                            UPrimitiveComponent* OtherComp, bool bSelfMoved,
+                                                            FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
+                                                            const FHitResult& Hit) const
 {
 	float MyVelLen;
 	FVector MyVelDir;
@@ -760,7 +765,7 @@ void AALSBaseCharacter::RagdollUpdate(const float DeltaTime)
 
 	// Use the Ragdoll Velocity to scale the ragdoll's joint strength for physical animation.
 	const float SpringValue = FMath::GetMappedRangeValueClamped({0.0f, 1000.0f}, {0.0f, 25000.0f},
-	                                                            LastRagdollVelocity.Size());
+	                                                            (float)LastRagdollVelocity.Size());
 	GetMesh()->SetAllMotorsAngularDriveParams(SpringValue, 0.0f, 0.0f, false);
 
 	// Disable Gravity if falling faster than -4000 to prevent continual acceleration.
@@ -942,7 +947,7 @@ void AALSBaseCharacter::OnOverlayStateChanged(const EALSOverlayState PreviousSta
 	MainAnimInstance->OverlayState = OverlayState;
 }
 
-void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PrevVisibleMesh)
+void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PreviousSkeletalMesh)
 {
 	// Update the Skeletal Mesh before we update materials and anim bp variables
 	GetMesh()->SetSkeletalMesh(VisibleMesh);
@@ -1266,8 +1271,8 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 	// Calculate input leaning.
 	const FVector Lean = GetActorRotation().UnrotateVector(GetMovementInput().GetSafeNormal()) * MaxFlightLean * RotationAlpha;
 
-	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, Lean.X * -1, DeltaTime, FlightRotationRate);
-	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, Lean.Y, DeltaTime, FlightRotationRate);
+	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, (float)Lean.X * -1.f, DeltaTime, FlightRotationRate);
+	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, (float)Lean.Y, DeltaTime, FlightRotationRate);
 
 	const bool bCanUpdateMovingRot = ((bIsMoving && bHasMovementInput) || Speed > 150.0f) && !HasAnyRootMotion();
 	if (bCanUpdateMovingRot)
@@ -1314,7 +1319,7 @@ void AALSBaseCharacter::UpdateSwimmingRotation(const float DeltaTime)
 	//@todo this is a visual effect that should probably be handled by animations, not code.
 	float const Lean = FMath::GetMappedRangeValueUnclamped({0, 3}, {0, 90}, GetMyMovementComponent()->GetMappedSpeed());
 
-	SmoothCharacterRotation({Lean * -Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
+	SmoothCharacterRotation({Lean * (float)-Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
 }
 
 float AALSBaseCharacter::FlightDistanceCheck(float CheckDistance, FVector Direction) const

@@ -617,9 +617,9 @@ void UALSCharacterAnimInstance::UpdateMovementValues(float DeltaSeconds)
 
 	// Set the Relative Acceleration Amount and Interp the Lean Amount.
 	RelativeAccelerationAmount = CalculateRelativeAccelerationAmount();
-	LeanAmount.LR = FMath::FInterpTo(LeanAmount.LR, RelativeAccelerationAmount.Y, DeltaSeconds,
+	LeanAmount.LR = FMath::FInterpTo(LeanAmount.LR, (float)RelativeAccelerationAmount.Y, DeltaSeconds,
 	                                 Config.GroundedLeanInterpSpeed);
-	LeanAmount.FB = FMath::FInterpTo(LeanAmount.FB, RelativeAccelerationAmount.X, DeltaSeconds,
+	LeanAmount.FB = FMath::FInterpTo(LeanAmount.FB, (float)RelativeAccelerationAmount.X, DeltaSeconds,
 	                                 Config.GroundedLeanInterpSpeed);
 
 	// Set the Walk Run Blend

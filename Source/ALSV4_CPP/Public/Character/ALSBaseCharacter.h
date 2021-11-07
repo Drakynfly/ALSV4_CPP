@@ -269,7 +269,7 @@ public:
 	virtual bool CanFly() const;
 
 	/** This can be overriden to setup custom conditions for allowing character flight from blueprint. */
-	UFUNCTION(BlueprintImplementableEvent, BlueprintPure = false, Category = "ALS|Flight")
+	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
 	bool FlightCheck() const;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
@@ -452,12 +452,8 @@ protected:
 
 	/** Flight */
 
-	// Flag to enable flight.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
-	bool bFlightEnabled = false;
-
 	// Flag to call CanFly() per tick. This will disable flight in midair on a false return. When disabled, CanFly() will
-	// only be called on takeoff.
+	// only be called on pre-takeoff.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
 	bool AlwaysCheckFlightConditions = false;
 
