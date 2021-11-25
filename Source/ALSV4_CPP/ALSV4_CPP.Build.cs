@@ -12,6 +12,7 @@ public class ALSV4_CPP : ModuleRules
 	public ALSV4_CPP(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		bUseUnity = false;
 
 		PublicDependencyModuleNames.AddRange(new[]
 		{

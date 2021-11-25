@@ -764,7 +764,7 @@ void AALSBaseCharacter::RagdollUpdate(const float DeltaTime)
 		                      : LastRagdollVelocity / 2;
 
 	// Use the Ragdoll Velocity to scale the ragdoll's joint strength for physical animation.
-	const float SpringValue = FMath::GetMappedRangeValueClamped({0.0f, 1000.0f}, {0.0f, 25000.0f},
+	const float SpringValue = FMath::GetMappedRangeValueClamped(FVector2f{0.0f, 1000.0f}, FVector2f{0.0f, 25000.0f},
 	                                                            (float)LastRagdollVelocity.Size());
 	GetMesh()->SetAllMotorsAngularDriveParams(SpringValue, 0.0f, 0.0f, false);
 
@@ -1114,8 +1114,8 @@ void AALSBaseCharacter::UpdateFlightMovement(const float DeltaTime)
 	float VelocityLength;
 	GetVelocity().ToDirectionAndLength(VelocityDirection, VelocityLength);
 
-	const float VelocityAlpha = FMath::GetMappedRangeValueClamped({0, GetCharacterMovement()->MaxFlySpeed * 1.5f},
-																  {0, 1},
+	const float VelocityAlpha = FMath::GetMappedRangeValueClamped(FVector2f{0, GetCharacterMovement()->MaxFlySpeed * 1.5f},
+																  FVector2f{0, 1},
 																  VelocityLength);
 
 	const FVector PressureDirection = FMath::Lerp(FVector(0, 0, -1), -VelocityDirection, VelocityAlpha);
@@ -1263,7 +1263,7 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 	const float FlightRotationRate = CalculateFlightRotationRate();
 
 	// Map distance to ground to a unit scaler.
-	const float Alpha_Altitude = FMath::GetMappedRangeValueClamped({0.f, CheckAltitude}, {0.f, 1.f}, RelativeAltitude);
+	const float Alpha_Altitude = FMath::GetMappedRangeValueClamped(FVector2f{0.f, CheckAltitude}, FVector2f{0.f, 1.f}, RelativeAltitude);
 
 	// Combine unit scalars equal to smaller.
 	const float RotationAlpha = Alpha_Altitude * (SpeedCache / 3);
@@ -1280,7 +1280,7 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 		if (RotationMode == EALSRotationMode::VelocityDirection)
 		{
 			// Velocity Rotation
-			const float InterpSpeed = FMath::GetMappedRangeValueClamped({0, 3}, {0.1, FlightRotationRate}, SpeedCache);
+			const float InterpSpeed = FMath::GetMappedRangeValueClamped(FVector2f{0, 3}, FVector2f{0.1, FlightRotationRate}, SpeedCache);
 			SmoothCharacterRotation({Pitch, LastVelocityRotation.Yaw, Roll}, 100.0f, InterpSpeed, DeltaTime);
 		}
 		else if (RotationMode == EALSRotationMode::LookingDirection)
@@ -1317,7 +1317,7 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 void AALSBaseCharacter::UpdateSwimmingRotation(const float DeltaTime)
 {
 	//@todo this is a visual effect that should probably be handled by animations, not code.
-	float const Lean = FMath::GetMappedRangeValueUnclamped({0, 3}, {0, 90}, GetMyMovementComponent()->GetMappedSpeed());
+	float const Lean = FMath::GetMappedRangeValueUnclamped(FVector2f{0, 3}, FVector2f{0, 90}, GetMyMovementComponent()->GetMappedSpeed());
 
 	SmoothCharacterRotation({Lean * (float)-Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
 }
@@ -1417,7 +1417,7 @@ float AALSBaseCharacter::CalculateGroundedRotationRate() const
 	const float MappedSpeedVal = MyCharacterMovementComponent->GetMappedSpeed();
 	const float CurveVal =
 		MyCharacterMovementComponent->CurrentMovementSettings.RotationRateCurve->GetFloatValue(MappedSpeedVal);
-	const float ClampedAimYawRate = FMath::GetMappedRangeValueClamped({0.0f, 300.0f}, {1.0f, 3.0f}, AimYawRate);
+	const float ClampedAimYawRate = FMath::GetMappedRangeValueClamped(FVector2f{0.0f, 300.0f}, FVector2f{1.0f, 3.0f}, AimYawRate);
 	return CurveVal * ClampedAimYawRate;
 }
 
@@ -1430,7 +1430,7 @@ float AALSBaseCharacter::CalculateFlightRotationRate() const
 	const float MappedSpeedVal = MyCharacterMovementComponent->GetMappedSpeed();
 	const float CurveVal =
 		MyCharacterMovementComponent->CurrentMovementSettings.RotationRateCurve->GetFloatValue(MappedSpeedVal);
-	const float ClampedAimYawRate = FMath::GetMappedRangeValueClamped({0.0f, 300.0f}, {1.0f, 3.0f}, AimYawRate);
+	const float ClampedAimYawRate = FMath::GetMappedRangeValueClamped(FVector2f{0.0f, 300.0f}, FVector2f{1.0f, 3.0f}, AimYawRate);
 	return CurveVal * ClampedAimYawRate;
 }
 

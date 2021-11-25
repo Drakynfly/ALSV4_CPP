@@ -6,6 +6,7 @@
 // Contributors:
 
 
+// ReSharper disable CppUE4CodingStandardNamingViolationWarning
 #pragma once
 
 #include "CoreMinimal.h"

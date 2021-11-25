@@ -102,7 +102,7 @@ struct FALSMantleAsset
 	UCurveVector* PositionCorrectionCurve = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Mantle System")
-	FVector StartingOffset;
+	FVector StartingOffset = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Mantle System")
 	float LowHeight = 0.0f;
@@ -141,7 +141,7 @@ struct FALSMantleParams
 	float PlayRate = 0.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Mantle System")
-	FVector StartingOffset;
+	FVector StartingOffset = FVector::ZeroVector;
 };
 
 USTRUCT(BlueprintType)
@@ -213,7 +213,7 @@ struct FALSMovementStanceSettings
 	FALSMovementSettings Crouching;
 
 	// These are not stances, per se, but they fix the best here. I do not like this, but the other option is to have a
-	// new struct or many more entries in FALSMovementStateSettings. I consider this a workable solution only becuase
+	// new struct or many more entries in FALSMovementSettings. I consider this a workable solution only becuase
 	// this struct isnt used anywhere else.
 
 	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
@@ -298,7 +298,7 @@ struct FALSHitFX : public FTableRowBase
 	EALSSpawnType NiagaraSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara", meta = (EditCondition = "NiagaraSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> NiagaraAttachmentType;
+	TEnumAsByte<EAttachLocation::Type> NiagaraAttachmentType = EAttachLocation::KeepRelativeOffset;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
 	FVector NiagaraLocationOffset = FVector::ZeroVector;
