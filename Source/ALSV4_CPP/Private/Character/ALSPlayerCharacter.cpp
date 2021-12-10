@@ -312,25 +312,7 @@ void AALSPlayerCharacter::OnSwitchCameraMode()
 
 void AALSPlayerCharacter::Input_Stance()
 {
-	// Stance Action: Press "Stance Action" to toggle Standing / Crouching, double tap to Roll.
-
 	if (MovementAction != EALSMovementAction::None) return;
-
-	UWorld* World = GetWorld();
-	check(World);
-
-	const float PrevStanceInputTime = LastStanceInputTime;
-	LastStanceInputTime = World->GetTimeSeconds();
-
-	if (LastStanceInputTime - PrevStanceInputTime <= RollDoubleTapTimeout)
-	{
-		// Roll
-		Replicated_PlayMontage(GetRollAnimation(), 1.15f);
-
-		if (Stance == EALSStance::Standing) { SetDesiredStance(EALSStance::Crouching); }
-		else if (Stance == EALSStance::Crouching) { SetDesiredStance(EALSStance::Standing); }
-		return;
-	}
 
 	if (MovementState == EALSMovementState::Grounded)
 	{
@@ -344,6 +326,20 @@ void AALSPlayerCharacter::Input_Stance()
 			SetDesiredStance(EALSStance::Standing);
 			UnCrouch();
 		}
+	}
+}
+
+void AALSPlayerCharacter::Input_Roll()
+{
+	UAnimMontage* Animation = GetRollAnimation();
+	const float AnimPlayLength = Animation->GetPlayLength() / RollAnimationSpeed;
+
+	const float ThisRollTime = GetWorld()->GetTimeSeconds();
+
+	if (ThisRollTime - RollResetTimer >= AnimPlayLength)
+	{
+		Replicated_PlayMontage(Animation, RollAnimationSpeed);
+		RollResetTimer = ThisRollTime;
 	}
 }
 

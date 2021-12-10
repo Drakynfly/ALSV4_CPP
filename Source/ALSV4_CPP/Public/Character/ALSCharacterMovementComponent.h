@@ -19,9 +19,12 @@
 UCLASS()
 class ALSV4_CPP_API UALSCharacterMovementComponent : public UCharacterMovementComponent
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
-	class FSavedMove_My : public FSavedMove_Character
+public:
+	UALSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer);
+
+	class ALSV4_CPP_API FSavedMove_My : public FSavedMove_Character
 	{
 	public:
 
@@ -38,7 +41,7 @@ class ALSV4_CPP_API UALSCharacterMovementComponent : public UCharacterMovementCo
 		EALSGait SavedAllowedGait = EALSGait::Walking;
 	};
 
-	class FNetworkPredictionData_Client_My : public FNetworkPredictionData_Client_Character
+	class ALSV4_CPP_API FNetworkPredictionData_Client_My : public FNetworkPredictionData_Client_Character
 	{
 	public:
 		FNetworkPredictionData_Client_My(const UCharacterMovementComponent& ClientMovement);
@@ -57,16 +60,6 @@ class ALSV4_CPP_API UALSCharacterMovementComponent : public UCharacterMovementCo
 	virtual float GetMaxAcceleration() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
 
-	// Movement Settings Variables
-	UPROPERTY()
-	uint8 bRequestMovementSettingsChange = 1;
-
-	UPROPERTY()
-	EALSGait AllowedGait = EALSGait::Walking;
-
-	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
-	FALSMovementSettings CurrentMovementSettings;
-
 	// Set Movement Curve (Called in every instance)
 	float GetMappedSpeed() const;
 
@@ -79,4 +72,14 @@ class ALSV4_CPP_API UALSCharacterMovementComponent : public UCharacterMovementCo
 
 	UFUNCTION(Reliable, Server, Category = "Movement Settings")
 	void Server_SetAllowedGait(EALSGait NewAllowedGait);
+
+	// Movement Settings Variables
+	UPROPERTY()
+	uint8 bRequestMovementSettingsChange = 1;
+
+	UPROPERTY()
+	EALSGait AllowedGait = EALSGait::Walking;
+
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
+	FALSMovementSettings CurrentMovementSettings;
 };
