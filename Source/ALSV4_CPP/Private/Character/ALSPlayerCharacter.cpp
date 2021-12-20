@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
 
 #include "Character/ALSPlayerCharacter.h"
 #include "Character/ALSCharacterMovementComponent.h"
