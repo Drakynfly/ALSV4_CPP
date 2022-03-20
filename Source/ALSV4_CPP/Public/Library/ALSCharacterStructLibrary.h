@@ -37,7 +37,7 @@ struct FALSComponentAndTransform
 	FTransform Transform;
 
 	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
-	class UPrimitiveComponent* Component = nullptr;
+	UPrimitiveComponent* Component = nullptr;
 };
 
 USTRUCT(BlueprintType)

@@ -266,6 +266,9 @@ void AALSBaseCharacter::RagdollStart()
 	// Step 3: Stop any active montages.
 	MainAnimInstance->Montage_Stop(0.2f);
 
+	// Fixes character mesh is showing default A pose for a split-second just before ragdoll ends in listen server games
+	GetMesh()->bOnlyAllowAutonomousTickPose = true;
+	
 	SetReplicateMovement(false);
 }
 
@@ -279,7 +282,9 @@ void AALSBaseCharacter::RagdollEnd()
 		GetMesh()->VisibilityBasedAnimTickOption = DefVisBasedTickOp;
 	}
 
+	// Revert back to default settings
 	MyCharacterMovementComponent->bIgnoreClientMovementErrorChecksAndCorrection = 0;
+	GetMesh()->bOnlyAllowAutonomousTickPose = false;
 	SetReplicateMovement(true);
 
 	if (!MainAnimInstance)
