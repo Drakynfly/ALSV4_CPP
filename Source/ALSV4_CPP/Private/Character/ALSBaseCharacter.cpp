@@ -104,7 +104,10 @@ void AALSBaseCharacter::OnBreakfall_Implementation()
 void AALSBaseCharacter::Replicated_PlayMontage_Implementation(UAnimMontage* Montage, const float PlayRate)
 {
 	// Roll: Simply play a Root Motion Montage.
-	MainAnimInstance->Montage_Play(Montage, PlayRate);
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Montage_Play(Montage, PlayRate);
+	}
 	Server_PlayMontage(Montage, PlayRate);
 }
 
@@ -118,21 +121,11 @@ void AALSBaseCharacter::BeginPlay()
 	// Make sure the mesh and animbp update after the CharacterBP to ensure it gets the most recent values.
 	GetMesh()->AddTickPrerequisiteActor(this);
 
-	// Once, force set variables in anim bp. This ensures anim instance & character starts synchronized
-	FALSAnimCharacterInformation& AnimData = MainAnimInstance->GetCharacterInformationMutable();
-	MainAnimInstance->Gait = DesiredGait;
-	MainAnimInstance->Stance = DesiredStance;
-	MainAnimInstance->RotationMode = DesiredRotationMode;
-	MainAnimInstance->FlightState = FlightState;
-	MainAnimInstance->OverlayState = OverlayState;
-	AnimData.PrevMovementState = PrevMovementState;
-	MainAnimInstance->MovementState = MovementState;
+	// Set the Movement Model
+	SetMovementModel();
 
-	// Update states to use the initial desired values.
-	SetGait(DesiredGait);
-	SetStance(DesiredStance);
-	SetRotationMode(DesiredRotationMode);
-	SetOverlayState(OverlayState);
+	// Force update states to use the initial desired values.
+	ForceUpdateCharacterState();
 
 	if (Stance == EALSStance::Standing)
 	{
@@ -148,7 +141,7 @@ void AALSBaseCharacter::BeginPlay()
 	LastVelocityRotation = TargetRotation;
 	LastMovementInputRotation = TargetRotation;
 
-	if (GetLocalRole() == ROLE_SimulatedProxy)
+	if (MainAnimInstance && GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		MainAnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
 	}
@@ -162,20 +155,19 @@ void AALSBaseCharacter::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 
-	MainAnimInstance = Cast<UALSCharacterAnimInstance>(GetMesh()->GetAnimInstance());
-	if (!MainAnimInstance)
+	if (GetMesh())
 	{
-		// Animation instance should be assigned if we're not in editor preview
-		checkf(GetWorld()->WorldType == EWorldType::EditorPreview,
-		       TEXT("%s doesn't have a valid animation instance assigned. That's not allowed"),
-		       *GetName());
+		MainAnimInstance = Cast<UALSCharacterAnimInstance>(GetMesh()->GetAnimInstance());
 	}
 }
 
 void AALSBaseCharacter::SetAimYawRate(const float NewAimYawRate)
 {
 	AimYawRate = NewAimYawRate;
-	MainAnimInstance->GetCharacterInformationMutable().AimYawRate = AimYawRate;
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().AimYawRate = AimYawRate;
+	}
 }
 
 void AALSBaseCharacter::GetControlForwardRightVector(FVector& Forward, FVector& Right) const
@@ -264,7 +256,10 @@ void AALSBaseCharacter::RagdollStart()
 	GetMesh()->SetAllBodiesBelowSimulatePhysics(NAME_Pelvis, true, true);
 
 	// Step 3: Stop any active montages.
-	MainAnimInstance->Montage_Stop(0.2f);
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Montage_Stop(0.2f);
+	}
 
 	// Fixes character mesh is showing default A pose for a split-second just before ragdoll ends in listen server games
 	GetMesh()->bOnlyAllowAutonomousTickPose = true;
@@ -287,21 +282,21 @@ void AALSBaseCharacter::RagdollEnd()
 	GetMesh()->bOnlyAllowAutonomousTickPose = false;
 	SetReplicateMovement(true);
 
-	if (!MainAnimInstance)
-	{
-		return;
-	}
-
 	// Step 1: Save a snapshot of the current Ragdoll Pose for use in AnimGraph to blend out of the ragdoll
-	MainAnimInstance->SavePoseSnapshot(NAME_RagdollPose);
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->SavePoseSnapshot(NAME_RagdollPose);
+	}
 
 	// Step 2: If the ragdoll is on the ground, set the movement mode to walking and play a Get Up animation.
 	// If not, set the movement mode to falling and update the character movement velocity to match the last ragdoll velocity.
 	if (bIsRagdollingOnGround)
 	{
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		MainAnimInstance->Montage_Play(GetGetUpAnimation(bRagdollFaceUp),
-		                               1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		if (MainAnimInstance)
+		{
+			MainAnimInstance->Montage_Play(GetGetUpAnimation(bRagdollFaceUp), 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+		}
 	}
 	else
 	{
@@ -326,33 +321,29 @@ void AALSBaseCharacter::Server_SetMeshLocationDuringRagdoll_Implementation(const
 	TargetRagdollLocation = MeshLocation;
 }
 
-void AALSBaseCharacter::SetMovementState(const EALSMovementState NewState)
+void AALSBaseCharacter::SetMovementState(const EALSMovementState NewState, bool bForce)
 {
-	if (MovementState != NewState)
+	if (bForce || MovementState != NewState)
 	{
 		PrevMovementState = MovementState;
 		MovementState = NewState;
-		FALSAnimCharacterInformation& AnimData = MainAnimInstance->GetCharacterInformationMutable();
-		AnimData.PrevMovementState = PrevMovementState;
-		MainAnimInstance->MovementState = MovementState;
 		OnMovementStateChanged(PrevMovementState);
 	}
 }
 
-void AALSBaseCharacter::SetMovementAction(const EALSMovementAction NewAction)
+void AALSBaseCharacter::SetMovementAction(const EALSMovementAction NewAction, bool bForce)
 {
-	if (MovementAction != NewAction)
+	if (bForce || MovementAction != NewAction)
 	{
 		const EALSMovementAction Prev = MovementAction;
 		MovementAction = NewAction;
-		MainAnimInstance->MovementAction = MovementAction;
 		OnMovementActionChanged(Prev);
 	}
 }
 
-void AALSBaseCharacter::SetStance(const EALSStance NewStance)
+void AALSBaseCharacter::SetStance(const EALSStance NewStance, bool bForce)
 {
-	if (Stance != NewStance)
+	if (bForce || Stance != NewStance)
 	{
 		const EALSStance Prev = Stance;
 		Stance = NewStance;
@@ -360,9 +351,9 @@ void AALSBaseCharacter::SetStance(const EALSStance NewStance)
 	}
 }
 
-void AALSBaseCharacter::SetGait(const EALSGait NewGait)
+void AALSBaseCharacter::SetGait(const EALSGait NewGait, bool bForce)
 {
-	if (Gait != NewGait)
+	if (bForce || Gait != NewGait)
 	{
 		const EALSGait Prev = Gait;
 		Gait = NewGait;
@@ -413,9 +404,9 @@ void AALSBaseCharacter::Server_SetDesiredRotationMode_Implementation(const EALSR
 	SetDesiredRotationMode(NewRotMode);
 }
 
-void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode)
+void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode, bool bForce)
 {
-	if (RotationMode != NewRotationMode)
+	if (bForce || RotationMode != NewRotationMode)
 	{
 		const EALSRotationMode Prev = RotationMode;
 		RotationMode = NewRotationMode;
@@ -423,14 +414,14 @@ void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode)
 
 		if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
-			Server_SetRotationMode(NewRotationMode);
+			Server_SetRotationMode(NewRotationMode, bForce);
 		}
 	}
 }
 
 void AALSBaseCharacter::Server_SetRotationMode_Implementation(const EALSRotationMode NewRotationMode)
 {
-	SetRotationMode(NewRotationMode);
+	SetRotationMode(NewRotationMode, bForce);
 }
 
 void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState)
@@ -474,9 +465,9 @@ void AALSBaseCharacter::Server_SetFlightState_Implementation(const EALSFlightSta
 	SetFlightState(NewFlightState);
 }
 
-void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState)
+void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState, bool bForce)
 {
-	if (OverlayState != NewState)
+	if (bForce || OverlayState != NewState)
 	{
 		const EALSOverlayState Prev = OverlayState;
 		OverlayState = NewState;
@@ -484,15 +475,15 @@ void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState)
 
 		if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
-			Server_SetOverlayState(NewState);
+			Server_SetOverlayState(NewState, bForce);
 		}
 	}
 }
 
 
-void AALSBaseCharacter::Server_SetOverlayState_Implementation(const EALSOverlayState NewState)
+void AALSBaseCharacter::Server_SetOverlayState_Implementation(EALSOverlayState NewState, bool bForce)
 {
-	SetOverlayState(NewState);
+	SetOverlayState(NewState, bForce);
 }
 
 void AALSBaseCharacter::EventOnLanded()
@@ -530,19 +521,27 @@ void AALSBaseCharacter::EventOnJumped()
 {
 	// Set the new In Air Rotation to the velocity rotation if speed is greater than 100.
 	InAirRotation = Speed > 100.0f ? LastVelocityRotation : GetActorRotation();
-	MainAnimInstance->OnJumped();
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->OnJumped();
+	}
 }
 
 void AALSBaseCharacter::Server_PlayMontage_Implementation(UAnimMontage* Montage, const float PlayRate)
 {
-	MainAnimInstance->Montage_Play(Montage, PlayRate);
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Montage_Play(Montage, PlayRate);
+	}
+
 	ForceNetUpdate();
 	Multicast_PlayMontage(Montage, PlayRate);
 }
 
 void AALSBaseCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* Montage, const float PlayRate)
 {
-	if (!IsLocallyControlled())
+	if (MainAnimInstance && !IsLocallyControlled())
 	{
 		MainAnimInstance->Montage_Play(Montage, PlayRate);
 	}
@@ -582,10 +581,34 @@ void AALSBaseCharacter::SetActorLocationAndTargetRotation(const FVector NewLocat
 	TargetRotation = NewRotation;
 }
 
-void AALSBaseCharacter::SetHasMovementInput(const bool bNewHasMovementInput)
+void AALSBaseCharacter::SetMovementModel()
+{
+	const FString ContextString = GetFullName();
+	FALSMovementStateSettings* OutRow =
+		MovementModel.DataTable->FindRow<FALSMovementStateSettings>(MovementModel.RowName, ContextString);
+	check(OutRow);
+	MovementData = *OutRow;
+}
+
+void AALSBaseCharacter::ForceUpdateCharacterState()
+{
+	SetGait(DesiredGait, true);
+	SetStance(DesiredStance, true);
+	SetRotationMode(DesiredRotationMode, true);
+	SetViewMode(ViewMode, true);
+	SetOverlayState(OverlayState, true);
+	SetMovementState(MovementState, true);
+	SetMovementAction(MovementAction, true);
+}
+
+void AALSBaseCharacter::SetHasMovementInput(bool bNewHasMovementInput)
 {
 	bHasMovementInput = bNewHasMovementInput;
-	MainAnimInstance->GetCharacterInformationMutable().bHasMovementInput = bHasMovementInput;
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().bHasMovementInput = bHasMovementInput;
+	}
 }
 
 // @todo i dont like this way
@@ -701,7 +724,11 @@ bool AALSBaseCharacter::FlightInterruptCheck_Implementation(UPrimitiveComponent*
 void AALSBaseCharacter::SetIsMoving(const bool bNewIsMoving)
 {
 	bIsMoving = bNewIsMoving;
-	MainAnimInstance->GetCharacterInformationMutable().bIsMoving = bIsMoving;
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().bIsMoving = bIsMoving;
+	}
 }
 
 FVector AALSBaseCharacter::GetMovementInput() const
@@ -712,13 +739,21 @@ FVector AALSBaseCharacter::GetMovementInput() const
 void AALSBaseCharacter::SetMovementInputAmount(const float NewMovementInputAmount)
 {
 	MovementInputAmount = NewMovementInputAmount;
-	MainAnimInstance->GetCharacterInformationMutable().MovementInputAmount = MovementInputAmount;
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().MovementInputAmount = MovementInputAmount;
+	}
 }
 
 void AALSBaseCharacter::SetSpeed(const float NewSpeed)
 {
 	Speed = NewSpeed;
-	MainAnimInstance->GetCharacterInformationMutable().Speed = Speed;
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().Speed = Speed;
+	}
 }
 
 
@@ -757,7 +792,11 @@ void AALSBaseCharacter::SetAcceleration(const FVector& NewAcceleration)
 	Acceleration = (NewAcceleration != FVector::ZeroVector || IsLocallyControlled())
 		               ? NewAcceleration
 		               : Acceleration / 2;
-	MainAnimInstance->GetCharacterInformationMutable().Acceleration = Acceleration;
+
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->GetCharacterInformationMutable().Acceleration = Acceleration;
+	}
 }
 
 void AALSBaseCharacter::RagdollUpdate(const float DeltaTime)
@@ -879,11 +918,18 @@ void AALSBaseCharacter::OnMovementModeChanged(const EMovementMode PrevMovementMo
 
 void AALSBaseCharacter::OnMovementStateChanged(const EALSMovementState PreviousState)
 {
+	if (MainAnimInstance)
+	{
+		FALSAnimCharacterInformation& AnimData = MainAnimInstance->GetCharacterInformationMutable();
+		AnimData.PrevMovementState = PrevMovementState;
+		MainAnimInstance->MovementState = MovementState;
+	}
+
 	if (MovementState != EALSMovementState::Flight)
 	{
 		SetFlightState(EALSFlightState::None);
 	}
-
+	
 	if (MovementState == EALSMovementState::Freefall)
 	{
 		if (MovementAction == EALSMovementAction::None)
@@ -905,6 +951,11 @@ void AALSBaseCharacter::OnMovementStateChanged(const EALSMovementState PreviousS
 
 void AALSBaseCharacter::OnMovementActionChanged(const EALSMovementAction PreviousAction)
 {
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->MovementAction = MovementAction;
+	}
+
 	// Make the character crouch if performing a roll.
 	if (MovementAction == EALSMovementAction::Rolling)
 	{
@@ -926,13 +977,38 @@ void AALSBaseCharacter::OnMovementActionChanged(const EALSMovementAction Previou
 
 void AALSBaseCharacter::OnStanceChanged(const EALSStance PreviousStance)
 {
-	MainAnimInstance->Stance = Stance;
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Stance = Stance;
+	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->Stance = Stance;
+	}
+
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 }
 
 void AALSBaseCharacter::OnRotationModeChanged(EALSRotationMode PreviousRotationMode)
 {
-	MainAnimInstance->RotationMode = RotationMode;
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->RotationMode = RotationMode;
+	}
+
+	if (RotationMode == EALSRotationMode::VelocityDirection && ViewMode == EALSViewMode::FirstPerson)
+	{
+		// If the new rotation mode is Velocity Direction and the character is in First Person,
+		// set the viewmode to Third Person.
+		SetViewMode(EALSViewMode::ThirdPerson);
+	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->SetRotationMode(RotationMode);
+	}
+
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 }
 
@@ -943,13 +1019,26 @@ void AALSBaseCharacter::OnFlightStateChanged(EALSFlightState PreviousFlightState
 }
 
 void AALSBaseCharacter::OnGaitChanged(const EALSGait PreviousGait)
-{
-	MainAnimInstance->Gait = Gait;
+{	
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->Gait = Gait;
+	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->Gait = Gait;
+	}
+	
+	
 }
 
 void AALSBaseCharacter::OnOverlayStateChanged(const EALSOverlayState PreviousState)
 {
-	MainAnimInstance->OverlayState = OverlayState;
+	if (MainAnimInstance)
+	{
+		MainAnimInstance->OverlayState = OverlayState;
+	}
 }
 
 void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PreviousSkeletalMesh)
@@ -966,15 +1055,8 @@ void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PreviousSkelet
 		}
 	}
 
-	// Force set variables in anim bp. This ensures anim instance & character stay synchronized on mesh changes
-	FALSAnimCharacterInformation& AnimData = MainAnimInstance->GetCharacterInformationMutable();
-	MainAnimInstance->Gait = Gait;
-	MainAnimInstance->Stance = Stance;
-	MainAnimInstance->RotationMode = RotationMode;
-	MainAnimInstance->OverlayState = OverlayState;
-	MainAnimInstance->FlightState = FlightState;
-	AnimData.PrevMovementState = PrevMovementState;
-	MainAnimInstance->MovementState = MovementState;
+	// Force set variables. This ensures anim instance & character stay synchronized on mesh changes
+	ForceUpdateCharacterState();
 }
 
 void AALSBaseCharacter::OnStartCrouch(const float HalfHeightAdjust, const float ScaledHalfHeightAdjust)
@@ -1192,7 +1274,7 @@ void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 				else
 				{
 					// Walking or Running..
-					const float YawOffsetCurveVal = MainAnimInstance->GetCurveValue(NAME_YawOffset);
+					const float YawOffsetCurveVal = MainAnimInstance ? MainAnimInstance->GetCurveValue(NAME_YawOffset) : 0.f;
 					YawValue = AimingRotation.Yaw + YawOffsetCurveVal;
 				}
 				SmoothCharacterRotation({0.0f, YawValue, 0.0f}, 500.0f, GroundedRotationRate, DeltaTime);
@@ -1215,7 +1297,7 @@ void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 			// The Rotation Amount curve defines how much rotation should be applied each frame,
 			// and is calculated for animations that are animated at 30fps.
 
-			const float RotAmountCurve = MainAnimInstance->GetCurveValue(NAME_RotationAmount);
+			const float RotAmountCurve = MainAnimInstance ? MainAnimInstance->GetCurveValue(NAME_RotationAmount) : 0.f;
 
 			if (FMath::Abs(RotAmountCurve) > 0.001f)
 			{

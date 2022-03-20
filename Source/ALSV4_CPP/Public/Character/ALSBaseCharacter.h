@@ -82,6 +82,7 @@ public:
 	/** Character States */
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
+	void SetMovementState(EALSMovementState NewState, bool bForce = false);
 	void SetMovementState(EALSMovementState NewState);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
@@ -91,19 +92,19 @@ public:
 	EALSMovementState GetPrevMovementState() const { return PrevMovementState; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetMovementAction(EALSMovementAction NewAction);
+	void SetMovementAction(EALSMovementAction NewAction, bool bForce = false);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSMovementAction GetMovementAction() const { return MovementAction; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetStance(EALSStance NewStance);
+	void SetStance(EALSStance NewStance, bool bForce = false);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSStance GetStance() const { return Stance; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetGait(EALSGait NewGait);
+	void SetGait(EALSGait NewGait, bool bForce = false);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSGait GetGait() const { return Gait; }
@@ -112,10 +113,10 @@ public:
 	EALSGait GetDesiredGait() const { return DesiredGait; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetRotationMode(EALSRotationMode NewRotationMode);
+	void SetRotationMode(EALSRotationMode NewRotationMode, bool bForce = false);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
-	void Server_SetRotationMode(EALSRotationMode NewRotationMode);
+	void Server_SetRotationMode(EALSRotationMode NewRotationMode, bool bForce);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSRotationMode GetRotationMode() const { return RotationMode; }
@@ -130,10 +131,10 @@ public:
 	EALSFlightState GetFlightState() const { return FlightState; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetOverlayState(EALSOverlayState NewState);
+	void SetOverlayState(EALSOverlayState NewState, bool bForce = false);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
-	void Server_SetOverlayState(EALSOverlayState NewState);
+	void Server_SetOverlayState(EALSOverlayState NewState, bool bForce);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSOverlayState GetOverlayState() const { return OverlayState; }
