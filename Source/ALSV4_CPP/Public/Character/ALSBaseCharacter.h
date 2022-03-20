@@ -640,5 +640,5 @@ protected:
 
 private:
 	UPROPERTY()
-	UALSDebugComponent* DebugComponent = nullptr;
+	UALSDebugComponent* ALSDebugComponent = nullptr;
 };

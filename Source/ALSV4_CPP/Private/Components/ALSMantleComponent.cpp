@@ -41,6 +41,8 @@ void UALSMantleComponent::BeginPlay()
 		OwnerCharacter = Cast<AALSBaseCharacter>(GetOwner());
 		if (OwnerCharacter)
 		{
+			ALSDebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
+
 			AddTickPrerequisiteActor(OwnerCharacter); // Always tick after owner, so we'll use updated values
 
 			// Bindings
@@ -57,7 +59,7 @@ void UALSMantleComponent::BeginPlay()
 			OwnerCharacter->RagdollStateChangedDelegate.AddUniqueDynamic(
 				this, &UALSMantleComponent::OnOwnerRagdollStateChanged);
 
-			DebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
+			//DebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
 
 			// Adjust for seamless vaulting. Ensures that the auto-vault will always trigger at the height that stepping up cuts out.
 			// @todo this does not adjust if MaxStepHeight is changed at runtime
@@ -195,7 +197,7 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 		const bool bHit = World->SweepSingleByProfile(HitResult, TraceStart, TraceEnd, FQuat::Identity, MantleObjectDetectionProfile,
 	                                                  CapsuleCollisionShape, Params);
 
-		if (DebugComponent && DebugComponent->GetShowTraces())
+		if (ALSDebugComponent && ALSDebugComponent->GetShowTraces())
 		{
 			UALSDebugComponent::DrawDebugCapsuleTraceSingle(World,
 			                                                TraceStart,
@@ -242,7 +244,7 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 	                                                  WalkableSurfaceDetectionChannel, SphereCollisionShape,
 	                                                  Params);
 
-		if (DebugComponent && DebugComponent->GetShowTraces())
+		if (ALSDebugComponent && ALSDebugComponent->GetShowTraces())
 		{
 			UALSDebugComponent::DrawDebugSphereTraceSingle(World,
 			                                               TraceStart,
@@ -273,7 +275,7 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 		DownTraceLocation, 2.0f, OwnerCharacter->GetCapsuleComponent());
 	const bool bCapsuleHasRoom = UALSMathLibrary::CapsuleHasRoomCheck(OwnerCharacter->GetCapsuleComponent(),
 	                                                                  CapsuleLocationFBase, 0.0f,
-	                                                                  0.0f, DebugType, DebugComponent && DebugComponent->GetShowTraces());
+	                                                                  0.0f, DebugType, ALSDebugComponent && ALSDebugComponent->GetShowTraces());
 
 	if (!bCapsuleHasRoom)
 	{
