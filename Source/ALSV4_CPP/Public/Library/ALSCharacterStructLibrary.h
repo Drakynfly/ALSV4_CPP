@@ -23,6 +23,10 @@ class UCurveVector;
 class UAnimMontage;
 class UAnimSequenceBase;
 class UCurveFloat;
+class UNiagaraSystem;
+class UMaterialInterface;
+class USoundBase;
+class UPrimitiveComponent;
 
 USTRUCT(BlueprintType)
 struct FALSComponentAndTransform
@@ -253,7 +257,7 @@ struct FALSHitFX : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category = "Surface")
-	TEnumAsByte<EPhysicalSurface> SurfaceType = SurfaceType_Default;
+	TEnumAsByte<enum EPhysicalSurface> SurfaceType;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TSoftObjectPtr<USoundBase> Sound;
@@ -262,7 +266,7 @@ struct FALSHitFX : public FTableRowBase
 	EALSSpawnType SoundSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Sound", meta = (EditCondition = "SoundSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> SoundAttachmentType = EAttachLocation::KeepRelativeOffset;
+	TEnumAsByte<enum EAttachLocation::Type> SoundAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	FVector SoundLocationOffset = FVector::ZeroVector;
@@ -277,7 +281,7 @@ struct FALSHitFX : public FTableRowBase
 	EALSSpawnType DecalSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Decal", meta = (EditCondition = "DecalSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> DecalAttachmentType = EAttachLocation::KeepRelativeOffset;
+	TEnumAsByte<enum EAttachLocation::Type> DecalAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
 	float DecalLifeSpan = 10.0f;
@@ -292,13 +296,13 @@ struct FALSHitFX : public FTableRowBase
 	FRotator DecalRotationOffset = FRotator::ZeroRotator;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
-	TSoftObjectPtr<class UNiagaraSystem> NiagaraSystem;
+	TSoftObjectPtr<UNiagaraSystem> NiagaraSystem;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
 	EALSSpawnType NiagaraSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara", meta = (EditCondition = "NiagaraSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<EAttachLocation::Type> NiagaraAttachmentType = EAttachLocation::KeepRelativeOffset;
+	TEnumAsByte<enum EAttachLocation::Type> NiagaraAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
 	FVector NiagaraLocationOffset = FVector::ZeroVector;
