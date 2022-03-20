@@ -117,14 +117,14 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
 	MantleParams.AnimMontage = MantleAsset.AnimMontage;
 	MantleParams.PositionCorrectionCurve = MantleAsset.PositionCorrectionCurve;
 	MantleParams.StartingOffset = MantleAsset.StartingOffset;
-	MantleParams.StartingPosition = FMath::GetMappedRangeValueClamped(FVector2f{MantleAsset.LowHeight, MantleAsset.HighHeight},
-	                                                                  FVector2f{
+	MantleParams.StartingPosition = FMath::GetMappedRangeValueClamped<float, float>({MantleAsset.LowHeight, MantleAsset.HighHeight},
+	                                                                  {
 		                                                                  MantleAsset.LowStartPosition,
 		                                                                  MantleAsset.HighStartPosition
 	                                                                  },
 	                                                                  MantleHeight);
-	MantleParams.PlayRate = FMath::GetMappedRangeValueClamped(FVector2f{MantleAsset.LowHeight, MantleAsset.HighHeight},
-	                                                          FVector2f{MantleAsset.LowPlayRate, MantleAsset.HighPlayRate},
+	MantleParams.PlayRate = FMath::GetMappedRangeValueClamped<float, float>({MantleAsset.LowHeight, MantleAsset.HighHeight},
+	                                                          {MantleAsset.LowPlayRate, MantleAsset.HighPlayRate},
 	                                                          MantleHeight);
 
 	// Step 2: Convert the world space target to the mantle component's local space for use in moving objects.
@@ -158,10 +158,10 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
 	MantleTimeline->SetPlayRate(MantleParams.PlayRate);
 	MantleTimeline->PlayFromStart();
 
-	// Step 7: Play the Anim Montage if valid.
-	if (IsValid(MantleParams.AnimMontage))
+	// Step 7: Play the Anim Montaget if valid.
+	if (MantleParams.AnimMontage && OwnerCharacter->GetMesh()->GetAnimInstance())
 	{
-		OwnerCharacter->GetMainAnimInstance()->Montage_Play(MantleParams.AnimMontage, MantleParams.PlayRate,
+		OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_Play(MantleParams.AnimMontage, MantleParams.PlayRate,
 		                                                    EMontagePlayReturnType::MontageLength,
 		                                                    MantleParams.StartingPosition, false);
 	}
@@ -175,9 +175,7 @@ bool UALSMantleComponent::MantleCheck(const FALSMantleTraceSettings& TraceSettin
 	}
 
 	// Step 1: Trace forward to find a wall / object the character cannot walk on.
-	const FVector& TraceDirection = OwnerCharacter->HasMovementInput()
-		                                ? OwnerCharacter->GetPlayerMovementInput()
-		                                : OwnerCharacter->GetActorForwardVector();
+	const FVector& TraceDirection = OwnerCharacter->GetActorForwardVector();
 	const FVector& CapsuleBaseLocation = UALSMathLibrary::GetCapsuleBaseLocation(
 		2.0f, OwnerCharacter->GetCapsuleComponent());
 	FVector TraceStart = CapsuleBaseLocation + TraceDirection * -30.0f;

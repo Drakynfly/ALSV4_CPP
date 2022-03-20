@@ -20,14 +20,12 @@
 
 // forward declarations
 class UALSDebugComponent;
-class UTimelineComponent;
-class UAnimInstance;
 class UAnimMontage;
 class UALSCharacterAnimInstance;
 enum class EVisibilityBasedAnimTickOption : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FJumpPressedSignature);
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnJumpedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FRagdollStateChangedSignature, bool, bRagdollState);
 
 /*
@@ -186,6 +184,9 @@ public:
 	FJumpPressedSignature JumpPressedDelegate;
 
 	UPROPERTY(BlueprintAssignable, Category = "ALS|Input")
+	FOnJumpedSignature OnJumpedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "ALS|Input")
 	FRagdollStateChangedSignature RagdollStateChangedDelegate;
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Input")
@@ -212,9 +213,6 @@ public:
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
 	void Server_SetDesiredRotationMode(EALSRotationMode NewRotMode);
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
-	FVector GetPlayerMovementInput() const;
-
 	/** Rotation System */
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Rotation System")
@@ -224,9 +222,6 @@ public:
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Movement System")
 	bool HasMovementInput() const { return bHasMovementInput; }
-
-	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
-	void SetHasMovementInput(bool bNewHasMovementInput);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
 	FALSMovementSettings GetTargetMovementSettings() const;
@@ -281,9 +276,6 @@ public:
 	/** Utility */
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Utility")
-	UALSCharacterAnimInstance* GetMainAnimInstance() { return MainAnimInstance; }
-
-	UFUNCTION(BlueprintCallable, Category = "ALS|Utility")
 	float GetAnimCurveValue(FName CurveName) const;
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Utility")
@@ -297,14 +289,8 @@ public:
 	UFUNCTION(BlueprintGetter, Category = "ALS|Essential Information")
 	FVector GetAcceleration() const { return Acceleration; }
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void SetAcceleration(const FVector& NewAcceleration);
-
 	UFUNCTION(BlueprintGetter, Category = "ALS|Essential Information")
 	bool IsMoving() const { return bIsMoving; }
-
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void SetIsMoving(bool bNewIsMoving);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
 	FVector GetMovementInput() const;
@@ -312,14 +298,8 @@ public:
 	UFUNCTION(BlueprintGetter, Category = "ALS|Essential Information")
 	float GetMovementInputAmount() const { return MovementInputAmount; }
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void SetMovementInputAmount(float NewMovementInputAmount);
-
 	UFUNCTION(BlueprintGetter, Category = "ALS|Essential Information")
 	float GetSpeed() const { return Speed; }
-
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void SetSpeed(float NewSpeed);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
 	FRotator GetAimingRotation() const { return AimingRotation; }
@@ -327,11 +307,49 @@ public:
 	UFUNCTION(BlueprintGetter, Category = "ALS|Essential Information")
 	float GetAimYawRate() const { return AimYawRate; }
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void SetAimYawRate(float NewAimYawRate);
+	/** Input */
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Essential Information")
-	void GetControlForwardRightVector(FVector& Forward, FVector& Right) const;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void ForwardMovementAction(float Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void RightMovementAction(float Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void CameraUpAction(float Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void CameraRightAction(float Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void JumpAction(bool bValue);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void SprintAction(bool bValue);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void AimAction(bool bValue);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void CameraTapAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void CameraHeldAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void StanceAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void WalkAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void RagdollAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void VelocityDirectionAction();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void LookingDirectionAction();
 
 protected:
 	/** Ragdoll System */
@@ -378,6 +396,7 @@ protected:
 
 	void UpdateGroundedRotation(float DeltaTime);
 
+	void UpdateInAirRotation(float DeltaTime);
 	virtual bool LimitGroundedRotation() const { return false; }
 
 	void UpdateFallingRotation(float DeltaTime);
@@ -561,9 +580,8 @@ protected:
 	bool bBreakfallOnLand = true;
 
 	/** If player hits to the ground with an amount of velocity greater than specified value, switch to breakfall state */
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ALS|Breakfall System", meta = (EditCondition =
-	        "bBreakfallOnLand"))
-	float BreakfallOnLandVelocity = 600.0f;
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ALS|Breakfall System", meta = (EditCondition ="bBreakfallOnLand"))
+	float BreakfallOnLandVelocity = 700.0f;
 
 	/** Flag to tell the breakfall system to activate the next time the character lands. This will set to false immediately after. */
 	UPROPERTY(BlueprintReadWrite, Category = "ALS|Breakfall System")
@@ -580,8 +598,7 @@ protected:
 	bool bRagdollOnLand = false;
 
 	/** If player hits to the ground with an amount of velocity greater than specified value, switch to ragdoll state */
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ALS|Ragdoll System", meta = (EditCondition =
-	        "bRagdollOnLand"))
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "ALS|Ragdoll System", meta = (EditCondition ="bRagdollOnLand"))
 	float RagdollOnLandVelocity = 1000.0f;
 
 	/** Is the current ragdoll state grounded */
@@ -606,6 +623,8 @@ protected:
 
 	/* Dedicated server mesh default visibility based anim tick option*/
 	EVisibilityBasedAnimTickOption DefVisBasedTickOp;
+
+	bool bPreRagdollURO = false;
 
 	/** Cached Variables */
 

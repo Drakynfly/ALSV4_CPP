@@ -25,6 +25,7 @@ public class ALSV4_CPP : ModuleRules
 			"GameplayTasks",
 			"PhysicsCore",
 			"Niagara",
+ 			"EnhancedInput",
 			"DeveloperSettings"
 		});
 
