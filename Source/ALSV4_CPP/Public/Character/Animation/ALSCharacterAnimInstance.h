@@ -1,10 +1,5 @@
-// Project:         Advanced Locomotion System V4 on C++
-// Copyright:       Copyright (C) 2021 Doğa Can Yanıkoğlu
-// License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
-// Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
-// Original Author: Doğa Can Yanıkoğlu
-// Contributors:
-
+// Copyright:       Copyright (C) 2022 Doğa Can Yanıkoğlu
+// Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 #pragma once
 
@@ -51,24 +46,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Event")
 	void OnPivot();
 
-	UFUNCTION(BlueprintCallable, Category = "ALS|Grounded")
-	void SetGroundedEntryState(EALSGroundedEntryState NewGroundedEntryState)
-	{
-		GroundedEntryState = NewGroundedEntryState;
-	}
-
-	UFUNCTION(BlueprintCallable, Category = "ALS|Grounded")
-	void SetOverlayOverrideState(int32 OverlayOverrideState)
-	{
-		LayerBlendingValues.OverlayOverrideState = OverlayOverrideState;
-	}
-
+protected:
+	
 	UFUNCTION(BlueprintCallable, Category = "ALS|Grounded")
 	void SetTrackedHipsDirection(EALSHipsDirection HipsDirection)
 	{
 		Grounded.TrackedHipsDirection = HipsDirection;
 	}
 
+	UFUNCTION(BlueprintCallable, Category = "ALS|Grounded")
+	void SetGroundedEntryState(EALSGroundedEntryState NewState)
+	{
+		GroundedEntryState = NewState;
+	}
+	
 	/** Enable Movement Animations if IsMoving and HasMovementInput, or if the Speed is greater than 150. */
 	UFUNCTION(BlueprintCallable, Category = "ALS|Grounded")
 	bool ShouldMoveCheck() const;
@@ -170,7 +161,7 @@ private:
 public:
 	/** References */
 	UPROPERTY(BlueprintReadOnly, Category = "Read Only Data|Character Information")
-	AALSBaseCharacter* Character = nullptr;
+	TObjectPtr<AALSBaseCharacter> Character = nullptr;
 
 	/** Character Information */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Read Only Data|Character Information", Meta = (
@@ -263,34 +254,34 @@ public:
 	/** Blend Curves */
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* DiagonalScaleAmountCurve = nullptr;
+	TObjectPtr<UCurveFloat> DiagonalScaleAmountCurve = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* StrideBlend_N_Walk = nullptr;
+	TObjectPtr<UCurveFloat> StrideBlend_N_Walk = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* StrideBlend_N_Run = nullptr;
+	TObjectPtr<UCurveFloat> StrideBlend_N_Run = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* StrideBlend_C_Walk = nullptr;
+	TObjectPtr<UCurveFloat> StrideBlend_C_Walk = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* LandPredictionCurve = nullptr;
+	TObjectPtr<UCurveFloat> LandPredictionCurve = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveFloat* LeanInAirCurve = nullptr;
+	TObjectPtr<UCurveFloat> LeanInAirCurve = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveVector* YawOffset_FB = nullptr;
+	TObjectPtr<UCurveVector> YawOffset_FB = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Blend Curves")
-	UCurveVector* YawOffset_LR = nullptr;
+	TObjectPtr<UCurveVector> YawOffset_LR = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Dynamic Transition")
-	UAnimSequenceBase* TransitionAnim_R = nullptr;
+	TObjectPtr<UAnimSequenceBase> TransitionAnim_R = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Dynamic Transition")
-	UAnimSequenceBase* TransitionAnim_L = nullptr;
+	TObjectPtr<UAnimSequenceBase> TransitionAnim_L = nullptr;
 
 	/** IK Bone Names */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Configuration|Anim Graph - Foot IK")
@@ -309,5 +300,5 @@ private:
 	bool bCanPlayDynamicTransition = true;
 
 	UPROPERTY()
-	UALSDebugComponent* ALSDebugComponent = nullptr;
+	TObjectPtr<UALSDebugComponent> ALSDebugComponent = nullptr;
 };

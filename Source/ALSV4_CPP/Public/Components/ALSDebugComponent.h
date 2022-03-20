@@ -1,9 +1,5 @@
-﻿// Project:         Advanced Locomotion System V4 on C++
-// Copyright:       Copyright (C) 2021 Doğa Can Yanıkoğlu
-// License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
-// Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
-// Original Author: Doğa Can Yanıkoğlu
-// Contributors:    Achim Turan
+﻿// Copyright:       Copyright (C) 2022 Doğa Can Yanıkoğlu
+// Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 #pragma once
 
@@ -11,7 +7,6 @@
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/ActorComponent.h"
-#include "CollisionShape.h"
 #include "ALSDebugComponent.generated.h"
 
 class AALSBaseCharacter;
@@ -27,7 +22,7 @@ public:
 	
 	void BeginPlay() override;
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "ALS|Debug")
 	void OnPlayerControllerInitialized(APlayerController* Controller);
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -140,7 +135,7 @@ protected:
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Debug")
-	AALSBaseCharacter* OwnerCharacter;
+	TObjectPtr<AALSBaseCharacter> OwnerCharacter;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|Debug")
 	bool bSlomo = false;
@@ -152,13 +147,13 @@ public:
 	bool bShowCharacterInfo = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|Debug")
-	USkeletalMesh* DebugSkeletalMesh = nullptr;
+	TObjectPtr<USkeletalMesh> DebugSkeletalMesh = nullptr;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Debug")
-	TArray<AALSBaseCharacter*> AvailableDebugCharacters;
+	TArray<TObjectPtr<AALSBaseCharacter>> AvailableDebugCharacters;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Debug")
-	AALSBaseCharacter* DebugFocusCharacter = nullptr;
+	TObjectPtr<AALSBaseCharacter> DebugFocusCharacter = nullptr;
 private:
 	static bool bDebugView;
 
@@ -173,7 +168,7 @@ private:
 	bool bDebugMeshVisible = false;
 
 	UPROPERTY()
-	USkeletalMesh* DefaultSkeletalMesh = nullptr;
+	TObjectPtr<USkeletalMesh> DefaultSkeletalMesh = nullptr;
 	
 	/// Stores the index, which is used to select the next focused debug ALSBaseCharacter.
 	/// If no characters where found during BeginPlay the value should be set to INDEX_NONE.

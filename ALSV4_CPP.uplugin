@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "4.20.1",
+	"VersionName": "4.23.2",
 	"FriendlyName": "Faerie Advanced Locomotion System",
 	"Description": "Fork of dyanikoglu's ALSV4_Community with flight support",
 	"Category": "Animation",
@@ -28,14 +28,14 @@
 			]
 		}
 	],
-   	"Plugins": [
-    {
-      "Name": "Niagara",
-      "Enabled": true
-    },
-	{
-      "Name": "EnhancedInput",
-      "Enabled": true
-    }
-  ]
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		}
+	]
 }

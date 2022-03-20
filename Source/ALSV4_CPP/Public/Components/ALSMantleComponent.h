@@ -1,8 +1,5 @@
-﻿// Project:         Advanced Locomotion System V4 on C++
-// Copyright:       Copyright (C) 2021 Doğa Can Yanıkoğlu
-// License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
-// Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
-// Original Author: Doğa Can Yanıkoğlu
+﻿// Copyright:       Copyright (C) 2022 Doğa Can Yanıkoğlu
+// Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 #pragma once
 
@@ -68,7 +65,7 @@ protected:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Mantle System")
-	UTimelineComponent* MantleTimeline = nullptr;
+	TObjectPtr<UTimelineComponent> MantleTimeline = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
 	FALSMantleTraceSettings GroundedTraceSettings;
@@ -80,7 +77,7 @@ protected:
 	FALSMantleTraceSettings FallingTraceSettings;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
-	UCurveFloat* MantleTimelineCurve;
+	TObjectPtr<UCurveFloat> MantleTimelineCurve;
 
 	static FName NAME_IgnoreOnlyPawn;
 	/** Profile to use to detect objects we allow mantling */
@@ -119,8 +116,8 @@ protected:
 
 private:
 	UPROPERTY()
-	AALSBaseCharacter* OwnerCharacter;
+	TObjectPtr<AALSBaseCharacter> OwnerCharacter;
 
 	UPROPERTY()
-	UALSDebugComponent* ALSDebugComponent = nullptr;
+	TObjectPtr<UALSDebugComponent> ALSDebugComponent = nullptr;
 };

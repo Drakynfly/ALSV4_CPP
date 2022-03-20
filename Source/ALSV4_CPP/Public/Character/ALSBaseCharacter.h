@@ -1,9 +1,5 @@
-// Project:         Advanced Locomotion System V4 on C++
-// Copyright:       Copyright (C) 2021 Doğa Can Yanıkoğlu
-// License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
-// Source Code:     https://github.com/dyanikoglu/ALSV4_CPP
-// Original Author: Doğa Can Yanıkoğlu
-// Contributors:    Haziq Fadhil, CanisHelix
+// Copyright:       Copyright (C) 2022 Doğa Can Yanıkoğlu
+// Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 
 #pragma once
@@ -102,6 +98,12 @@ public:
 	EALSStance GetStance() const { return Stance; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
+	void SetOverlayOverrideState(int32 NewState);
+
+	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
+	int32 GetOverlayOverrideState() const { return OverlayOverrideState; }
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
 	void SetGait(EALSGait NewGait, bool bForce = false);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
@@ -131,11 +133,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
 	void SetOverlayState(EALSOverlayState NewState, bool bForce = false);
 
+	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
+	void SetGroundedEntryState(EALSGroundedEntryState NewState);
+
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
 	void Server_SetOverlayState(EALSOverlayState NewState, bool bForce);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSOverlayState GetOverlayState() const { return OverlayState; }
+
+	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
+	EALSGroundedEntryState GetGroundedEntryState() const { return GroundedEntryState; }
 
 	/** Landed, Jumped, Rolling, Mantling and Ragdoll*/
 	/** On Landed*/
@@ -437,7 +445,7 @@ protected:
 protected:
 	/* Custom movement component*/
 	UPROPERTY()
-	UALSCharacterMovementComponent* MyCharacterMovementComponent;
+	TObjectPtr<UALSCharacterMovementComponent> MyCharacterMovementComponent;
 
 	/** Input */
 
@@ -532,9 +540,15 @@ protected:
 
 	/** Replicated Skeletal Mesh Information*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|Skeletal Mesh", ReplicatedUsing = OnRep_VisibleMesh)
-	USkeletalMesh* VisibleMesh = nullptr;
+	TObjectPtr<USkeletalMesh> VisibleMesh = nullptr;
 
 	/** State Values */
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_OverlayState)
+	EALSOverlayState OverlayState = EALSOverlayState::Default;
+
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
+	EALSGroundedEntryState GroundedEntryState;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
 	EALSMovementState MovementState = EALSMovementState::None;
@@ -556,6 +570,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|State Values")
 	EALSStance Stance = EALSStance::Standing;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_ViewMode)
+	EALSViewMode ViewMode = EALSViewMode::ThirdPerson;
+
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
+	int32 OverlayOverrideState = 0;
 
 	/** Movement System */
 
@@ -634,6 +654,9 @@ protected:
 	FVector PreviousVelocity = FVector::ZeroVector;
 
 	float PreviousAimYaw = 0.0f;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|Camera")
+	TObjectPtr<UALSPlayerCameraBehavior> CameraBehavior;
 
 	// Altitude variables for flight calculations.
 	float SeaAltitude = 0; // @todo essentially global. move to struct
@@ -660,5 +683,5 @@ protected:
 
 private:
 	UPROPERTY()
-	UALSDebugComponent* ALSDebugComponent = nullptr;
+	TObjectPtr<UALSDebugComponent> ALSDebugComponent = nullptr;
 };
