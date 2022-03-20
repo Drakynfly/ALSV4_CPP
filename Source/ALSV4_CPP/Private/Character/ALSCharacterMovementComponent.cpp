@@ -14,6 +14,7 @@
 UALSCharacterMovementComponent::UALSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+	bUseAccelerationForPaths = true;
 }
 
 void UALSCharacterMovementComponent::OnMovementUpdated(const float DeltaTime, const FVector& OldLocation,

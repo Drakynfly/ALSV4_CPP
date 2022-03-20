@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
 
 #pragma once
 
@@ -69,8 +69,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
 	void MovementInput_Z(float Value);
 
+	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
 	void PlayerCameraUpInput(float Value);
 
+	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
 	void PlayerCameraRightInput(float Value);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
@@ -101,6 +103,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
 	void Input_Stance();
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
+	void Input_Roll();
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Input")
 	void Input_Gait();
@@ -146,7 +151,7 @@ protected:
 	/** Input */
 
 	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
-	float RollDoubleTapTimeout = 0.3f;
+	float RollAnimationSpeed = 1.15f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
 	float ViewModeSwitchHoldTime = 0.2f;
@@ -167,12 +172,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Camera")
 	UALSPlayerCameraBehavior* CameraBehavior;
 
-	/** Last time the 'first' crouch/roll button is pressed */
-	float LastStanceInputTime = 0.0f;
-
 	/** Last time the camera action button is pressed */
 	float CameraActionPressedTime = 0.0f;
 
-	/* Timer to manage camera mode swap action */
+	/** Timer to prevent roll input spamming */
+	float RollResetTimer = 0.0f;
+
+	/** Timer to manage camera mode swap action */
 	FTimerHandle OnCameraModeSwapTimer;
 };
