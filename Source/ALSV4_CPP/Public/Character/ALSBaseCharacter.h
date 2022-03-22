@@ -17,12 +17,13 @@
 // forward declarations
 class UALSDebugComponent;
 class UAnimMontage;
-class UALSCharacterAnimInstance;
+class UALSPlayerCameraBehavior;
 enum class EVisibilityBasedAnimTickOption : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FJumpPressedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnJumpedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FRagdollStateChangedSignature, bool, bRagdollState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FViewModeChangedSignature, class ACharacter*, Character, EALSViewMode, PrevViewMode);
 
 /*
  * Base character class
@@ -44,8 +45,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void BeginPlay() override;
-
-	virtual void PreInitializeComponents() override;
 
 	virtual void PostInitializeComponents() override;
 
@@ -77,7 +76,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
 	void SetMovementState(EALSMovementState NewState, bool bForce = false);
-	void SetMovementState(EALSMovementState NewState);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSMovementState GetMovementState() const { return MovementState; }
@@ -122,10 +120,19 @@ public:
 	EALSRotationMode GetRotationMode() const { return RotationMode; }
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
-	void SetFlightState(EALSFlightState NewFlightState);
+	void SetViewMode(EALSViewMode NewViewMode, bool bForce = false);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
-	void Server_SetFlightState(EALSFlightState NewFlightState);
+	void Server_SetViewMode(EALSViewMode NewViewMode, bool bForce);
+
+	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
+	EALSViewMode GetViewMode() const { return ViewMode; }
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Character States")
+	void SetFlightState(EALSFlightState NewFlightState, bool bForce = false);
+
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Character States")
+	void Server_SetFlightState(EALSFlightState NewFlightState, bool bForce);
 
 	UFUNCTION(BlueprintGetter, Category = "ALS|Character States")
 	EALSFlightState GetFlightState() const { return FlightState; }
@@ -287,10 +294,33 @@ public:
 	float GetAnimCurveValue(FName CurveName) const;
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Utility")
-	void SetVisibleMesh(USkeletalMesh* NewSkeletalMesh);
+	void SetVisibleMesh(USkeletalMesh* NewVisibleMesh);
 
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = "ALS|Utility")
 	void Server_SetVisibleMesh(USkeletalMesh* NewSkeletalMesh);
+
+	/** Camera System */
+
+	UFUNCTION(BlueprintGetter, Category = "ALS|Camera System")
+	bool IsRightShoulder() const { return bRightShoulder; }
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	void SetRightShoulder(bool bNewRightShoulder);
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	virtual ECollisionChannel GetThirdPersonTraceParams(FVector& TraceOrigin, float& TraceRadius);
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	virtual FTransform GetThirdPersonPivotTarget();
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	virtual FVector GetFirstPersonCameraTarget();
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	void GetCameraParameters(float& TPFOVOut, float& FPFOVOut, bool& bRightShoulderOut) const;
+
+	UFUNCTION(BlueprintCallable, Category = "ALS|Camera System")
+	void SetCameraBehavior(UALSPlayerCameraBehavior* CamBeh) { CameraBehavior = CamBeh; }
 
 	/** Essential Information Getters/Setters */
 
@@ -322,6 +352,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
 	void RightMovementAction(float Value);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
+	void UpMovementAction(float Value);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ALS|Input")
 	void CameraUpAction(float Value);
@@ -382,6 +415,8 @@ protected:
 
 	virtual void OnGaitChanged(EALSGait PreviousGait);
 
+	virtual void OnViewModeChanged(EALSViewMode PreviousViewMode);
+
 	virtual void OnOverlayStateChanged(EALSOverlayState PreviousState);
 
 	virtual void OnVisibleMeshChanged(const USkeletalMesh* PreviousSkeletalMesh);
@@ -404,9 +439,6 @@ protected:
 
 	void UpdateGroundedRotation(float DeltaTime);
 
-	void UpdateInAirRotation(float DeltaTime);
-	virtual bool LimitGroundedRotation() const { return false; }
-
 	void UpdateFallingRotation(float DeltaTime);
 
 	void UpdateFlightRotation(float DeltaTime);
@@ -424,10 +456,11 @@ protected:
 	float CalculateGroundedRotationRate() const;
 
 	float CalculateFlightRotationRate() const;
+	void LimitRotation(float AimYawMin, float AimYawMax, float InterpSpeed, float DeltaTime);
 
 	void UpdateRelativeAltitude();
 
-	void LimitRotation(float AimYawMin, float AimYawMax, float InterpSpeed, float DeltaTime);
+	void ForceUpdateCharacterState();
 
 	/** Replication */
 	UFUNCTION(Category = "ALS|Replication")
@@ -437,10 +470,21 @@ protected:
 	void OnRep_FlightState(EALSFlightState PrevFlightState);
 
 	UFUNCTION(Category = "ALS|Replication")
+	void OnRep_ViewMode(EALSViewMode PrevViewMode);
+
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnViewModeChanged", ScriptName = "OnViewModeChanged"))
+	void K2_OnViewModeChanged(EALSViewMode PreviousViewMode);
+
+	UFUNCTION(Category = "ALS|Replication")
 	void OnRep_OverlayState(EALSOverlayState PrevOverlayState);
 
 	UFUNCTION(Category = "ALS|Replication")
 	void OnRep_VisibleMesh(USkeletalMesh* NewVisibleMesh);
+
+public:
+	/** Multicast delegate for ViewMode changing. */
+	UPROPERTY(BlueprintAssignable, Category=Character)
+	FViewModeChangedSignature ViewModeChangedDelegate;
 
 protected:
 	/* Custom movement component*/
@@ -455,7 +499,7 @@ protected:
 	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "ALS|Input")
 	EALSGait DesiredGait = EALSGait::Running;
 
-	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "ALS|Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "ALS|Input")
 	EALSStance DesiredStance = EALSStance::Standing;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
@@ -464,8 +508,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
 	float LookLeftRightRate = 1.25f;
 
-	UPROPERTY(Category = "ALS|Input", BlueprintReadOnly)
-	int32 TimesPressedStance = 0;
+	UPROPERTY(EditDefaultsOnly, Category = "ALS|Input", BlueprintReadOnly)
+	float RollDoubleTapTimeout = 0.3f;
 
 	UPROPERTY(Category = "ALS|Input", BlueprintReadOnly)
 	bool bBreakFall = false;
@@ -473,10 +517,10 @@ protected:
 	UPROPERTY(Category = "ALS|Input", BlueprintReadOnly)
 	bool bSprintHeld = false;
 
-	/** State Values */
+	/** Camera System */
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_OverlayState)
-	EALSOverlayState OverlayState = EALSOverlayState::Default;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
+	float ThirdPersonFOV = 90.0f;
 
 	/** Flight */
 
@@ -489,13 +533,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
 	bool UseFlightInterrupt = true;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
+	float FirstPersonFOV = 90.0f;
+
 	// The velocity of the hit required to trigger a positive FlightInterruptThresholdCheck.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
 	float FlightInterruptThreshold = 600;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
+	bool bRightShoulder = false;
 
 	// The max degree that flight input will consider forward.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Flight", Meta = (UIMin = 0, UIMax = 90))
 	float MaxFlightForwardAngle = 85;
+	/** Movement System */
 
 	// Maximum rotation in Yaw, Pitch and Roll, that may be achieved in flight.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Flight")
@@ -623,7 +673,7 @@ protected:
 
 	/** Is the current ragdoll state grounded */
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Ragdoll System")
-	bool bIsRagdollingOnGround = false;
+	bool bRagdollOnGround = false;
 
 	/** If player starts to freefall while rolling, switch to ragdoll state */
 	UPROPERTY(BlueprintReadWrite, Category = "ALS|Ragdoll System")
@@ -648,19 +698,16 @@ protected:
 
 	/** Cached Variables */
 
-	// Stores the literal input from the player/AI-driver. Is not valid on server for client-controlled characters.
-	FVector InputVector = FVector::ZeroVector;
-
 	FVector PreviousVelocity = FVector::ZeroVector;
 
 	float PreviousAimYaw = 0.0f;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Camera")
 	TObjectPtr<UALSPlayerCameraBehavior> CameraBehavior;
 
 	// Altitude variables for flight calculations.
-	float SeaAltitude = 0; // @todo essentially global. move to struct
-	float TroposphereHeight = 0; // @todo essentially global. move to struct
+	float SeaAltitude = 0; // @todo essentially global.
+	float TroposphereHeight = 0; // @todo essentially global.
 
 	float RelativeAltitude = 0;
 	float AbsoluteAltitude = 0;
@@ -669,8 +716,8 @@ protected:
 
 	TArray<FALSMovementModifier> MovementModifiers;
 
-	UPROPERTY(BlueprintReadOnly, Category = "ALS|Utility")
-	UALSCharacterAnimInstance* MainAnimInstance = nullptr;
+	/** Last time the 'first' crouch/roll button is pressed */
+	float LastStanceInputTime = 0.0f;
 
 	/* Timer to manage reset of braking friction factor after on landed event */
 	FTimerHandle OnLandedFrictionResetTimer;

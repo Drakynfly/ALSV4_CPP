@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright Guy (Drakynfly) Lundvall. All Rights Reserved.
+
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"

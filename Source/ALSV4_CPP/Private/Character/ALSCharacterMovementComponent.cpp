@@ -68,10 +68,10 @@ float UALSCharacterMovementComponent::GetMaxBrakingDeceleration() const
 	{
 		return Super::GetMaxBrakingDeceleration();
 	}
-	return CurrentMovementSettings.	MovementCurve->GetVectorValue(GetMappedSpeed()).Y;
+	return CurrentMovementSettings.MovementCurve->GetVectorValue(GetMappedSpeed()).Y;
 }
 
-void UALSCharacterMovementComponent::UpdateFromCompressedFlags(const uint8 Flags) // Client only
+void UALSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags) // Client only
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
@@ -121,8 +121,7 @@ void UALSCharacterMovementComponent::FSavedMove_My::SetMoveFor(ACharacter* Chara
 {
 	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
 
-	UALSCharacterMovementComponent* CharacterMovement = Cast<UALSCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	if (const UALSCharacterMovementComponent* CharacterMovement = Cast<UALSCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		bSavedRequestMovementSettingsChange = CharacterMovement->bRequestMovementSettingsChange;
 		SavedAllowedGait = CharacterMovement->AllowedGait;
@@ -133,8 +132,7 @@ void UALSCharacterMovementComponent::FSavedMove_My::PrepMoveFor(ACharacter* Char
 {
 	Super::PrepMoveFor(Character);
 
-	UALSCharacterMovementComponent* CharacterMovement = Cast<UALSCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	if (UALSCharacterMovementComponent* CharacterMovement = Cast<UALSCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		CharacterMovement->AllowedGait = SavedAllowedGait;
 	}

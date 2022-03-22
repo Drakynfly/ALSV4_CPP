@@ -3,12 +3,11 @@
 
 #pragma once
 
+#include "ALSCharacterEnumLibrary.h"
+
 #include "Kismet/KismetSystemLibrary.h"
 #include "CoreMinimal.h"
-
-#include "ALSCharacterEnumLibrary.h"
-#include "ALSCharacterStructLibrary.h"
-
+#include "Library/ALSCharacterStructLibrary.h"
 #include "ALSMathLibrary.generated.h"
 
 class UCapsuleComponent;
@@ -26,14 +25,14 @@ public:
 	static FTransform MantleComponentLocalToWorld(const FALSComponentAndTransform& CompAndTransform);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Math Utils")
-	static FTransform TransfromSub(const FTransform& T1, const FTransform& T2)
+	static FTransform TransformSub(const FTransform& T1, const FTransform& T2)
 	{
 		return FTransform(T1.GetRotation().Rotator() - T2.GetRotation().Rotator(),
 		                  T1.GetLocation() - T2.GetLocation(), T1.GetScale3D() - T2.GetScale3D());
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Math Utils")
-	static FTransform TransfromAdd(const FTransform& T1, const FTransform& T2)
+	static FTransform TransformAdd(const FTransform& T1, const FTransform& T2)
 	{
 		return FTransform(T1.GetRotation().Rotator() + T2.GetRotation().Rotator(),
 		                  T1.GetLocation() + T2.GetLocation(), T1.GetScale3D() + T2.GetScale3D());

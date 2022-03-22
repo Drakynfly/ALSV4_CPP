@@ -2,8 +2,7 @@
 // Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 // ReSharper disable CppUE4CodingStandardNamingViolationWarning
-// ReSharper disable CppNonExplicitConvertingConstructor
-// ReSharper disable CppNonExplicitConversionOperator
+// ReSharper disable IdentifierTypo
 
 #pragma once
 

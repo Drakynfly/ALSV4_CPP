@@ -4,28 +4,15 @@
 
 #include "Character/ALSPlayerCameraManager.h"
 
-
+#include "ALSStaticNames.h"
+#include "Character/ALSBaseCharacter.h"
 #include "Character/ALSPlayerController.h"
-#include "Character/ALSPlayerCharacter.h"
 #include "Character/Animation/ALSPlayerCameraBehavior.h"
 #include "Components/ALSDebugComponent.h"
 
 #include "Kismet/KismetMathLibrary.h"
 
-
-const FName NAME_CameraBehavior(TEXT("CameraBehavior"));
-const FName NAME_CameraOffset_X(TEXT("CameraOffset_X"));
-const FName NAME_CameraOffset_Y(TEXT("CameraOffset_Y"));
-const FName NAME_CameraOffset_Z(TEXT("CameraOffset_Z"));
-const FName NAME_Override_Debug(TEXT("Override_Debug"));
-const FName NAME_PivotLagSpeed_X(TEXT("PivotLagSpeed_X"));
-const FName NAME_PivotLagSpeed_Y(TEXT("PivotLagSpeed_Y"));
-const FName NAME_PivotLagSpeed_Z(TEXT("PivotLagSpeed_Z"));
-const FName NAME_PivotOffset_X(TEXT("PivotOffset_X"));
-const FName NAME_PivotOffset_Y(TEXT("PivotOffset_Y"));
-const FName NAME_PivotOffset_Z(TEXT("PivotOffset_Z"));
-const FName NAME_RotationLagSpeed(TEXT("RotationLagSpeed"));
-const FName NAME_Weight_FirstPerson(TEXT("Weight_FirstPerson"));
+using namespace ALS::CameraManager;
 
 DEFINE_LOG_CATEGORY(LogAlsPlayerCameraManager)
 
@@ -36,24 +23,23 @@ AALSPlayerCameraManager::AALSPlayerCameraManager()
 	CameraBehavior->bHiddenInGame = true;
 }
 
-void AALSPlayerCameraManager::OnPossess(AALSPlayerCharacter* NewCharacter)
+void AALSPlayerCameraManager::OnPossess(AALSBaseCharacter* NewCharacter)
 {
 	// Set "Controlled Pawn" when Player Controller Possesses new character. (called from Player Controller)
 	check(NewCharacter);
 	ControlledCharacter = NewCharacter;
 
 	// Update references in the Camera Behavior AnimBP.
-	UALSPlayerCameraBehavior* CastedBehv = Cast<UALSPlayerCameraBehavior>(CameraBehavior->GetAnimInstance());
-	if (CastedBehv)
+	if (UALSPlayerCameraBehavior* CastedBehavior = Cast<UALSPlayerCameraBehavior>(CameraBehavior->GetAnimInstance()))
 	{
-		NewCharacter->SetCameraBehavior(CastedBehv);
-		CastedBehv->MovementState = NewCharacter->GetMovementState();
-		CastedBehv->MovementAction = NewCharacter->GetMovementAction();
-		CastedBehv->bRightShoulder = NewCharacter->IsRightShoulder();
-		CastedBehv->Gait = NewCharacter->GetGait();
-		CastedBehv->SetRotationMode(NewCharacter->GetRotationMode());
-		CastedBehv->Stance = NewCharacter->GetStance();
-		CastedBehv->ViewMode = NewCharacter->GetViewMode();
+		NewCharacter->SetCameraBehavior(CastedBehavior);
+		CastedBehavior->MovementState = NewCharacter->GetMovementState();
+		CastedBehavior->MovementAction = NewCharacter->GetMovementAction();
+		CastedBehavior->bRightShoulder = NewCharacter->IsRightShoulder();
+		CastedBehavior->Gait = NewCharacter->GetGait();
+		CastedBehavior->SetRotationMode(NewCharacter->GetRotationMode());
+		CastedBehavior->Stance = NewCharacter->GetStance();
+		CastedBehavior->ViewMode = NewCharacter->GetViewMode();
 	}
 
 	// Initial position
@@ -66,8 +52,7 @@ void AALSPlayerCameraManager::OnPossess(AALSPlayerCharacter* NewCharacter)
 
 float AALSPlayerCameraManager::GetCameraBehaviorParam(const FName CurveName) const
 {
-	UAnimInstance* Inst = CameraBehavior->GetAnimInstance();
-	if (Inst)
+	if (const UAnimInstance* Inst = CameraBehavior->GetAnimInstance())
 	{
 		return Inst->GetCurveValue(CurveName);
 	}

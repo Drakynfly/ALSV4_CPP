@@ -56,6 +56,16 @@ public:
 	virtual float GetMaxAcceleration() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
 
+	// Movement Settings Variables
+	UPROPERTY()
+	uint8 bRequestMovementSettingsChange = 1;
+
+	UPROPERTY()
+	EALSGait AllowedGait = EALSGait::Walking;
+
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
+	FALSMovementSettings CurrentMovementSettings;
+	
 	// Set Movement Curve (Called in every instance)
 	float GetMappedSpeed() const;
 
@@ -68,14 +78,4 @@ public:
 
 	UFUNCTION(Reliable, Server, Category = "Movement Settings")
 	void Server_SetAllowedGait(EALSGait NewAllowedGait);
-
-	// Movement Settings Variables
-	UPROPERTY()
-	uint8 bRequestMovementSettingsChange = 1;
-
-	UPROPERTY()
-	EALSGait AllowedGait = EALSGait::Walking;
-
-	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
-	FALSMovementSettings CurrentMovementSettings;
 };

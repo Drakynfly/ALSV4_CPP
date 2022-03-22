@@ -4,6 +4,7 @@
 
 #include "Character/Animation/Notify/ALSAnimNotifyFootstep.h"
 
+#include "ALSStaticNames.h"
 #include "Components/AudioComponent.h"
 #include "Engine/DataTable.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -12,24 +13,25 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 
+using namespace ALS::Footstep;
 
-const FName NAME_Mask_FootstepSound(TEXT("Mask_FootstepSound"));
-
-FName UALSAnimNotifyFootstep::NAME_FootstepType(TEXT("FootstepType"));
-FName UALSAnimNotifyFootstep::NAME_Foot_R(TEXT("Foot_R"));
-
+UALSAnimNotifyFootstep::UALSAnimNotifyFootstep()
+{
+	SoundParameterName = NAME_FootstepType;
+	FootSocketName = NAME_Foot_R;
+}
 
 void UALSAnimNotifyFootstep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	Super::Notify(MeshComp, Animation, EventReference);
-	
-	if (!MeshComp)
+
+	if (!IsValid(MeshComp))
 	{
 		return;
 	}
-	
+
 	AActor* MeshOwner = MeshComp->GetOwner();
-	if (!MeshOwner)
+	if (!IsValid(MeshOwner))
 	{
 		return;
 	}

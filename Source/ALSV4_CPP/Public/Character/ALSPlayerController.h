@@ -30,7 +30,6 @@ class ALSV4_CPP_API AALSPlayerController : public APlayerController
 public:
 	virtual void OnPossess(APawn* NewPawn) override;
 	virtual void OnRep_Pawn() override;
-	virtual void BeginPlayingState() override;
 
 private:
 	virtual void SetupInputComponent() override;

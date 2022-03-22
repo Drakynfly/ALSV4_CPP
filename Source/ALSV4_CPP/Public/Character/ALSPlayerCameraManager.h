@@ -9,9 +9,8 @@
 
 // forward declarations
 class UALSDebugComponent;
-class AALSPlayerCharacter;
-
 DECLARE_LOG_CATEGORY_EXTERN(LogAlsPlayerCameraManager, Log, All)
+class AALSBaseCharacter;
 
 /**
  * Player camera manager class
@@ -25,7 +24,7 @@ public:
 	AALSPlayerCameraManager();
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
-	void OnPossess(AALSPlayerCharacter* NewCharacter);
+	void OnPossess(AALSBaseCharacter* NewCharacter);
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
 	float GetCameraBehaviorParam(FName CurveName) const;

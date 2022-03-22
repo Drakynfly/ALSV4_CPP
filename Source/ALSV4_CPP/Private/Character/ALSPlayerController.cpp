@@ -2,6 +2,8 @@
 // Source Code:     https://github.com/dyanikoglu/ALS-Community
 
 
+// ReSharper disable CppMemberFunctionMayBeConst
+
 #include "Character/ALSPlayerController.h"
 
 #include "EnhancedInputComponent.h"
@@ -19,7 +21,7 @@
 void AALSPlayerController::OnPossess(APawn* NewPawn)
 {
 	Super::OnPossess(NewPawn);
-	PossessedCharacter = Cast<AALSPlayerCharacter>(NewPawn);
+	PossessedCharacter = Cast<AALSBaseCharacter>(NewPawn);
 	if (!IsRunningDedicatedServer())
 	{
 		// Servers want to setup camera only in listen servers.
@@ -27,7 +29,7 @@ void AALSPlayerController::OnPossess(APawn* NewPawn)
 	}
 
 	SetupInputs();
-	
+
 	UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
 	if (DebugComp)
 	{
@@ -38,10 +40,10 @@ void AALSPlayerController::OnPossess(APawn* NewPawn)
 void AALSPlayerController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
-	PossessedCharacter = Cast<AALSPlayerCharacter>(GetPawn());
+	PossessedCharacter = Cast<AALSBaseCharacter>(GetPawn());
 	SetupCamera();
 	SetupInputs();
-	
+
 	UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
 	if (DebugComp)
 	{

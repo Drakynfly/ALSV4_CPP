@@ -7,7 +7,7 @@
 
 #include "Character/ALSBaseCharacter.h"
 
-void UALSPlayerCameraBehavior::SetRotationMode(EALSRotationMode RotationMode)
+void UALSPlayerCameraBehavior::SetRotationMode(const EALSRotationMode RotationMode)
 {
 	bVelocityDirection = RotationMode == EALSRotationMode::VelocityDirection;
 	bLookingDirection = RotationMode == EALSRotationMode::LookingDirection;

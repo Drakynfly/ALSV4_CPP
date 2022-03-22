@@ -5,14 +5,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ALSPlayerCharacter.h"
+#include "Character/ALSBaseCharacter.h"
 #include "ALSCharacter.generated.h"
 
 /**
  * Specialized character class, with additional features like held object etc.
  */
 UCLASS(Blueprintable, BlueprintType)
-class ALSV4_CPP_API AALSCharacter : public AALSPlayerCharacter
+class ALSV4_CPP_API AALSCharacter : public AALSBaseCharacter
 {
 	GENERATED_BODY()
 

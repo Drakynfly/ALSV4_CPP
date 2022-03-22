@@ -4,11 +4,11 @@
 
 #include "Character/ALSBaseCharacter.h"
 
+#include "ALSStaticNames.h"
 #include "ALS_Settings.h"
 #include "Character/Animation/ALSCharacterAnimInstance.h"
-#include "Library/ALSMathLibrary.h"
+#include "Character/Animation/ALSPlayerCameraBehavior.h"
 #include "Components/ALSDebugComponent.h"
-
 #include "Components/CapsuleComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Character/ALSCharacterMovementComponent.h"
@@ -18,15 +18,7 @@
 #include "TimerManager.h"
 #include "Net/UnrealNetwork.h"
 
-
-const FName NAME_Pelvis(TEXT("Pelvis"));
-const FName NAME_RagdollPose(TEXT("RagdollPose"));
-const FName NAME_RotationAmount(TEXT("RotationAmount"));
-const FName NAME_YawOffset(TEXT("YawOffset"));
-const FName NAME_pelvis(TEXT("pelvis"));
-const FName NAME_root(TEXT("root"));
-const FName NAME_spine_03(TEXT("spine_03"));
-
+using namespace ALS::BaseCharacter;
 
 AALSBaseCharacter::AALSBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UALSCharacterMovementComponent>(CharacterMovementComponentName))
@@ -36,7 +28,7 @@ AALSBaseCharacter::AALSBaseCharacter(const FObjectInitializer& ObjectInitializer
 	bReplicates = true;
 	SetReplicatingMovement(true);
 
-	const auto UALS_Settings = UALS_Settings::Get();
+	const UALS_Settings* UALS_Settings = UALS_Settings::Get();
 	SeaAltitude = UALS_Settings->SeaAltitude;
 	TroposphereHeight = UALS_Settings->TroposphereHeight;
 }
@@ -62,6 +54,7 @@ void AALSBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION(AALSBaseCharacter, RotationMode, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AALSBaseCharacter, OverlayState, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AALSBaseCharacter, FlightState, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(AALSBaseCharacter, ViewMode, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AALSBaseCharacter, VisibleMesh, COND_SkipOwner);
 }
 
@@ -118,6 +111,9 @@ void AALSBaseCharacter::BeginPlay()
 	// Make sure the mesh and animbp update after the CharacterBP to ensure it gets the most recent values.
 	GetMesh()->AddTickPrerequisiteActor(this);
 
+	// Force update states to use the initial desired values.
+	ForceUpdateCharacterState();
+
 	if (Stance == EALSStance::Standing)
 	{
 		UnCrouch();
@@ -140,16 +136,6 @@ void AALSBaseCharacter::BeginPlay()
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 
 	ALSDebugComponent = FindComponentByClass<UALSDebugComponent>();
-}
-
-void AALSBaseCharacter::PreInitializeComponents()
-{
-	Super::PreInitializeComponents();
-
-	if (GetMesh())
-	{
-		MainAnimInstance = Cast<UALSCharacterAnimInstance>(GetMesh()->GetAnimInstance());
-	}
 }
 
 void AALSBaseCharacter::Tick(const float DeltaTime)
@@ -179,6 +165,7 @@ void AALSBaseCharacter::Tick(const float DeltaTime)
 				UpdateFlightRotation(DeltaTime);
 
 				//@todo why is this here? should probably be in CharacterMovementComponent
+				// or flight component
 				if (HasAuthority() || GetLocalRole() == ROLE_AutonomousProxy)
 				{
 					UpdateFlightMovement(DeltaTime);
@@ -271,7 +258,7 @@ void AALSBaseCharacter::RagdollEnd()
 
 	// Step 2: If the ragdoll is on the ground, set the movement mode to walking and play a Get Up animation.
 	// If not, set the movement mode to falling and update the character movement velocity to match the last ragdoll velocity.
-	if (bIsRagdollingOnGround)
+	if (bRagdollOnGround)
 	{
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		if (GetMesh()->GetAnimInstance())
@@ -302,7 +289,7 @@ void AALSBaseCharacter::Server_SetMeshLocationDuringRagdoll_Implementation(const
 	TargetRagdollLocation = MeshLocation;
 }
 
-void AALSBaseCharacter::SetMovementState(const EALSMovementState NewState, bool bForce)
+void AALSBaseCharacter::SetMovementState(const EALSMovementState NewState, const bool bForce)
 {
 	if (bForce || MovementState != NewState)
 	{
@@ -312,7 +299,7 @@ void AALSBaseCharacter::SetMovementState(const EALSMovementState NewState, bool 
 	}
 }
 
-void AALSBaseCharacter::SetMovementAction(const EALSMovementAction NewAction, bool bForce)
+void AALSBaseCharacter::SetMovementAction(const EALSMovementAction NewAction, const bool bForce)
 {
 	if (bForce || MovementAction != NewAction)
 	{
@@ -322,7 +309,7 @@ void AALSBaseCharacter::SetMovementAction(const EALSMovementAction NewAction, bo
 	}
 }
 
-void AALSBaseCharacter::SetStance(const EALSStance NewStance, bool bForce)
+void AALSBaseCharacter::SetStance(const EALSStance NewStance, const bool bForce)
 {
 	if (bForce || Stance != NewStance)
 	{
@@ -332,12 +319,12 @@ void AALSBaseCharacter::SetStance(const EALSStance NewStance, bool bForce)
 	}
 }
 
-void AALSBaseCharacter::SetOverlayOverrideState(int32 NewState)
+void AALSBaseCharacter::SetOverlayOverrideState(const int32 NewState)
 {
 	OverlayOverrideState = NewState;
 }
 
-void AALSBaseCharacter::SetGait(const EALSGait NewGait, bool bForce)
+void AALSBaseCharacter::SetGait(const EALSGait NewGait, const bool bForce)
 {
 	if (bForce || Gait != NewGait)
 	{
@@ -346,7 +333,6 @@ void AALSBaseCharacter::SetGait(const EALSGait NewGait, bool bForce)
 		OnGaitChanged(Prev);
 	}
 }
-
 
 void AALSBaseCharacter::SetDesiredStance(const EALSStance NewStance)
 {
@@ -390,7 +376,7 @@ void AALSBaseCharacter::Server_SetDesiredRotationMode_Implementation(const EALSR
 	SetDesiredRotationMode(NewRotMode);
 }
 
-void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode, bool bForce)
+void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode, const bool bForce)
 {
 	if (bForce || RotationMode != NewRotationMode)
 	{
@@ -405,22 +391,20 @@ void AALSBaseCharacter::SetRotationMode(const EALSRotationMode NewRotationMode, 
 	}
 }
 
-void AALSBaseCharacter::Server_SetRotationMode_Implementation(const EALSRotationMode NewRotationMode, bool bForce)
+void AALSBaseCharacter::Server_SetRotationMode_Implementation(const EALSRotationMode NewRotationMode, const bool bForce)
 {
 	SetRotationMode(NewRotationMode, bForce);
 }
 
-void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState)
+void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState, const bool bForce)
 {
-	if (NewFlightState != FlightState)
+	if (bForce || FlightState != NewFlightState)
 	{
 		// If we are trying for a mode other than turning flight off, verify the character is able to fly.
 		if (NewFlightState != EALSFlightState::None)
 		{
 			if (!CanFly()) return;
 		}
-
-		// With guards passed we can set the flying mode.
 
 		const EALSFlightState Prev = FlightState;
 		FlightState = NewFlightState;
@@ -437,21 +421,43 @@ void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState)
 			GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 		}
 		else // Changing from one flight mode to another logic:
-		{}
+		{
+			// Currently blank
+		}
 
 		if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
-			Server_SetFlightState(NewFlightState);
+			Server_SetFlightState(NewFlightState, bForce);
 		}
 	}
 }
 
-void AALSBaseCharacter::Server_SetFlightState_Implementation(const EALSFlightState NewFlightState)
+void AALSBaseCharacter::Server_SetFlightState_Implementation(const EALSFlightState NewFlightState, const bool bForce)
 {
 	SetFlightState(NewFlightState);
 }
 
-void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState, bool bForce)
+void AALSBaseCharacter::SetViewMode(const EALSViewMode NewViewMode, const bool bForce)
+{
+	if (bForce || ViewMode != NewViewMode)
+	{
+		const EALSViewMode Prev = ViewMode;
+		ViewMode = NewViewMode;
+		OnViewModeChanged(Prev);
+
+		if (GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			Server_SetViewMode(NewViewMode, bForce);
+		}
+	}
+}
+
+void AALSBaseCharacter::Server_SetViewMode_Implementation(const EALSViewMode NewViewMode, const bool bForce)
+{
+	SetViewMode(NewViewMode, bForce);
+}
+
+void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState, const bool bForce)
 {
 	if (bForce || OverlayState != NewState)
 	{
@@ -466,13 +472,13 @@ void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState, bool bF
 	}
 }
 
-void AALSBaseCharacter::SetGroundedEntryState(EALSGroundedEntryState NewState)
+void AALSBaseCharacter::SetGroundedEntryState(const EALSGroundedEntryState NewState)
 {
 	GroundedEntryState = NewState;
 }
 
 
-void AALSBaseCharacter::Server_SetOverlayState_Implementation(EALSOverlayState NewState, bool bForce)
+void AALSBaseCharacter::Server_SetOverlayState_Implementation(const EALSOverlayState NewState, const bool bForce)
 {
 	SetOverlayState(NewState, bForce);
 }
@@ -569,7 +575,17 @@ void AALSBaseCharacter::SetActorLocationAndTargetRotation(const FVector NewLocat
 	TargetRotation = NewRotation;
 }
 
-// @todo i dont like this way
+void AALSBaseCharacter::ForceUpdateCharacterState()
+{
+	SetGait(DesiredGait, true);
+	SetStance(DesiredStance, true);
+	SetRotationMode(DesiredRotationMode, true);
+	SetViewMode(ViewMode, true);
+	SetOverlayState(OverlayState, true);
+	SetMovementState(MovementState, true);
+	SetMovementAction(MovementAction, true);
+}
+
 FALSMovementSettings AALSBaseCharacter::GetTargetMovementSettings() const
 {
 	check(MovementData);
@@ -679,28 +695,10 @@ bool AALSBaseCharacter::FlightInterruptCheck_Implementation(UPrimitiveComponent*
 	return MyVelLen >= FlightInterruptThreshold;
 }
 
-void AALSBaseCharacter::SetIsMoving(const bool bNewIsMoving)
-{
-	bIsMoving = bNewIsMoving;
-
-
-}
-
 FVector AALSBaseCharacter::GetMovementInput() const
 {
 	return ReplicatedCurrentAcceleration;
 }
-
-void AALSBaseCharacter::SetMovementInputAmount(const float NewMovementInputAmount)
-{
-	MovementInputAmount = NewMovementInputAmount;
-}
-
-void AALSBaseCharacter::SetSpeed(const float NewSpeed)
-{
-	Speed = NewSpeed;
-}
-
 
 float AALSBaseCharacter::GetAnimCurveValue(const FName CurveName) const
 {
@@ -732,11 +730,37 @@ void AALSBaseCharacter::Server_SetVisibleMesh_Implementation(USkeletalMesh* NewV
 	SetVisibleMesh(NewVisibleMesh);
 }
 
-void AALSBaseCharacter::SetAcceleration(const FVector& NewAcceleration)
+void AALSBaseCharacter::SetRightShoulder(const bool bNewRightShoulder)
 {
-	Acceleration = (NewAcceleration != FVector::ZeroVector || IsLocallyControlled())
-		               ? NewAcceleration
-		               : Acceleration / 2;
+	bRightShoulder = bNewRightShoulder;
+	if (CameraBehavior)
+	{
+		CameraBehavior->bRightShoulder = bRightShoulder;
+	}
+}
+
+ECollisionChannel AALSBaseCharacter::GetThirdPersonTraceParams(FVector& TraceOrigin, float& TraceRadius)
+{
+	TraceOrigin = GetActorLocation();
+	TraceRadius = 10.0f;
+	return ECC_Visibility;
+}
+
+FTransform AALSBaseCharacter::GetThirdPersonPivotTarget()
+{
+	return GetActorTransform();
+}
+
+FVector AALSBaseCharacter::GetFirstPersonCameraTarget()
+{
+	return GetMesh()->GetSocketLocation(NAME_FP_Camera);
+}
+
+void AALSBaseCharacter::GetCameraParameters(float& TPFOVOut, float& FPFOVOut, bool& bRightShoulderOut) const
+{
+	TPFOVOut = ThirdPersonFOV;
+	FPFOVOut = FirstPersonFOV;
+	bRightShoulderOut = bRightShoulder;
 }
 
 void AALSBaseCharacter::RagdollUpdate(const float DeltaTime)
@@ -818,10 +842,10 @@ void AALSBaseCharacter::SetActorLocationDuringRagdoll(float DeltaTime)
 		                                             1.0f);
 	}
 
-	bIsRagdollingOnGround = HitResult.IsValidBlockingHit();
+	bRagdollOnGround = HitResult.IsValidBlockingHit();
 	FVector NewRagdollLoc = TargetRagdollLocation;
 
-	if (bIsRagdollingOnGround)
+	if (bRagdollOnGround)
 	{
 		const float ImpactDistZ = FMath::Abs(HitResult.ImpactPoint.Z - HitResult.TraceStart.Z);
 		NewRagdollLoc.Z += GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - ImpactDistZ + 2.0f;
@@ -835,7 +859,7 @@ void AALSBaseCharacter::SetActorLocationDuringRagdoll(float DeltaTime)
 			(TargetRagdollLocation - GetMesh()->GetSocketLocation(RagdollSocketPullName)) * ServerRagdollPull,
 			RagdollSocketPullName, true);
 	}
-	SetActorLocationAndTargetRotation(bIsRagdollingOnGround ? NewRagdollLoc : TargetRagdollLocation, TargetRagdollRotation);
+	SetActorLocationAndTargetRotation(bRagdollOnGround ? NewRagdollLoc : TargetRagdollLocation, TargetRagdollRotation);
 }
 
 void AALSBaseCharacter::OnMovementModeChanged(const EMovementMode PrevMovementMode, const uint8 PreviousCustomMode)
@@ -882,6 +906,11 @@ void AALSBaseCharacter::OnMovementStateChanged(const EALSMovementState PreviousS
 			ReplicatedRagdollStart();
 		}
 	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->MovementState = MovementState;
+	}
 }
 
 void AALSBaseCharacter::OnMovementActionChanged(const EALSMovementAction PreviousAction)
@@ -903,29 +932,79 @@ void AALSBaseCharacter::OnMovementActionChanged(const EALSMovementAction Previou
 			Crouch();
 		}
 	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->MovementAction = MovementAction;
+	}
 }
 
 void AALSBaseCharacter::OnStanceChanged(const EALSStance PreviousStance)
 {
+	if (CameraBehavior)
+	{
+		CameraBehavior->Stance = Stance;
+	}
+
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 }
 
 void AALSBaseCharacter::OnRotationModeChanged(EALSRotationMode PreviousRotationMode)
 {
+	if (RotationMode == EALSRotationMode::VelocityDirection && ViewMode == EALSViewMode::FirstPerson)
+	{
+		// If the new rotation mode is Velocity Direction and the character is in First Person,
+		// set the viewmode to Third Person.
+		SetViewMode(EALSViewMode::ThirdPerson);
+	}
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->SetRotationMode(RotationMode);
+	}
+
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 }
 
 void AALSBaseCharacter::OnFlightStateChanged(EALSFlightState PreviousFlightState)
 {
-	MainAnimInstance->FlightState = FlightState;
-	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
+	if (CameraBehavior)
+	{
+		CameraBehavior->FlightState = FlightState;
+	}
 }
 
 void AALSBaseCharacter::OnGaitChanged(const EALSGait PreviousGait)
 {
-	if (MainAnimInstance)
+	if (CameraBehavior)
 	{
-		MainAnimInstance->Gait = Gait;
+		CameraBehavior->Gait = Gait;
+	}
+}
+
+void AALSBaseCharacter::OnViewModeChanged(const EALSViewMode PreviousViewMode)
+{
+	if (ViewMode == EALSViewMode::ThirdPerson)
+	{
+		if (RotationMode == EALSRotationMode::VelocityDirection || RotationMode == EALSRotationMode::LookingDirection)
+		{
+			// If Third Person, set the rotation mode back to the desired mode.
+			SetRotationMode(DesiredRotationMode);
+		}
+	}
+	else if (ViewMode == EALSViewMode::FirstPerson && RotationMode == EALSRotationMode::VelocityDirection)
+	{
+		// If First Person, set the rotation mode to looking direction if currently in the velocity direction mode.
+		SetRotationMode(EALSRotationMode::LookingDirection);
+	}
+
+	// @todo why do we need both a virtual handler and a delegate. cannot just one do?
+	K2_OnViewModeChanged(PreviousViewMode);
+	ViewModeChangedDelegate.Broadcast(this, PreviousViewMode);
+
+	if (CameraBehavior)
+	{
+		CameraBehavior->ViewMode = ViewMode;
 	}
 }
 
@@ -933,7 +1012,7 @@ void AALSBaseCharacter::OnOverlayStateChanged(const EALSOverlayState PreviousSta
 {
 }
 
-void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PreviousSkeletalMesh)
+void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PrevVisibleMesh)
 {
 	// Update the Skeletal Mesh before we update materials and anim bp variables
 	GetMesh()->SetSkeletalMesh(VisibleMesh);
@@ -1181,7 +1260,9 @@ void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 		else
 		{
 			// Not Moving
-			if (LimitGroundedRotation())
+
+			if ((ViewMode == EALSViewMode::ThirdPerson && RotationMode == EALSRotationMode::Aiming) ||
+				ViewMode == EALSViewMode::FirstPerson)
 			{
 				LimitRotation(-100.0f, 100.0f, 20.0f, DeltaTime);
 			}
@@ -1274,8 +1355,8 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 			else
 			{
 				// Walking or Running..
-				const float YawOffsetCurveVal = MainAnimInstance->GetCurveValue(NAME_YawOffset);
-				YawValue = AimingRotation.Yaw + YawOffsetCurveVal;
+				//const float YawOffsetCurveVal = MainAnimInstance->GetCurveValue(NAME_YawOffset);
+				YawValue = AimingRotation.Yaw; //+ YawOffsetCurveVal;
 			}
 			SmoothCharacterRotation({Pitch, YawValue, Roll}, 100.0f, FlightRotationRate, DeltaTime);
 		}
@@ -1418,9 +1499,7 @@ void AALSBaseCharacter::UpdateRelativeAltitude()
 {
 	RelativeAltitude = FlightDistanceCheck(TroposphereHeight, FVector::DownVector);
 }
-
-void AALSBaseCharacter::LimitRotation(const float AimYawMin, const float AimYawMax,
-                                      const float InterpSpeed, const float DeltaTime)
+void AALSBaseCharacter::LimitRotation(const float AimYawMin, const float AimYawMax, const float InterpSpeed, const float DeltaTime)
 {
 	// Prevent the character from rotating past a certain angle.
 	FRotator Delta = AimingRotation - GetActorRotation();
@@ -1433,6 +1512,232 @@ void AALSBaseCharacter::LimitRotation(const float AimYawMin, const float AimYawM
 		const float TargetYaw = ControlRotYaw + (RangeVal > 0.0f ? AimYawMin : AimYawMax);
 		SmoothCharacterRotation({0.0f, TargetYaw, 0.0f}, 0.0f, InterpSpeed, DeltaTime);
 	}
+}
+
+void AALSBaseCharacter::ForwardMovementAction_Implementation(const float Value)
+{
+	if (MovementState == EALSMovementState::None || MovementState == EALSMovementState::Ragdoll)
+	{
+		return;
+	}
+
+	// Default camera relative movement behavior
+	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
+	AddMovementInput(UKismetMathLibrary::GetForwardVector(DirRotator), Value);
+}
+
+void AALSBaseCharacter::RightMovementAction_Implementation(const float Value)
+{
+	if (MovementState == EALSMovementState::None || MovementState == EALSMovementState::Ragdoll)
+	{
+		return;
+	}
+
+	// Default camera relative movement behavior
+	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
+	AddMovementInput(UKismetMathLibrary::GetRightVector(DirRotator), Value);
+}
+
+void AALSBaseCharacter::UpMovementAction_Implementation(const float Value)
+{
+	if (MovementState == EALSMovementState::None || MovementState == EALSMovementState::Ragdoll)
+	{
+		return;
+	}
+
+	// Default camera relative movement behavior
+	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
+	AddMovementInput(UKismetMathLibrary::GetUpVector(DirRotator), Value);
+}
+
+void AALSBaseCharacter::CameraUpAction_Implementation(const float Value)
+{
+	AddControllerPitchInput(LookUpDownRate * Value);
+}
+
+void AALSBaseCharacter::CameraRightAction_Implementation(const float Value)
+{
+	AddControllerYawInput(LookLeftRightRate * Value);
+}
+
+void AALSBaseCharacter::JumpAction_Implementation(const bool bValue)
+{
+	if (bValue)
+	{
+		// Jump Action: Press "Jump Action" to end the ragdoll if ragdolling, stand up if crouching, or jump if standing.
+		if (JumpPressedDelegate.IsBound())
+		{
+			JumpPressedDelegate.Broadcast();
+		}
+
+		if (MovementAction == EALSMovementAction::None)
+		{
+			if (MovementState == EALSMovementState::Grounded)
+			{
+				if (Stance == EALSStance::Standing)
+				{
+					Jump();
+				}
+				else if (Stance == EALSStance::Crouching)
+				{
+					UnCrouch();
+				}
+			}
+			else if (MovementState == EALSMovementState::Ragdoll)
+			{
+				ReplicatedRagdollEnd();
+			}
+		}
+	}
+	else
+	{
+		StopJumping();
+	}
+}
+
+void AALSBaseCharacter::SprintAction_Implementation(const bool bValue)
+{
+	if (bValue)
+	{
+		SetDesiredGait(EALSGait::Sprinting);
+	}
+	else
+	{
+		SetDesiredGait(EALSGait::Running);
+	}
+}
+
+void AALSBaseCharacter::AimAction_Implementation(const bool bValue)
+{
+	if (bValue)
+	{
+		// AimAction: Hold "AimAction" to enter the aiming mode, release to revert back the desired rotation mode.
+		SetRotationMode(EALSRotationMode::Aiming);
+	}
+	else
+	{
+		if (ViewMode == EALSViewMode::ThirdPerson)
+		{
+			SetRotationMode(DesiredRotationMode);
+		}
+		else if (ViewMode == EALSViewMode::FirstPerson)
+		{
+			SetRotationMode(EALSRotationMode::LookingDirection);
+		}
+	}
+}
+
+void AALSBaseCharacter::CameraTapAction_Implementation()
+{
+	if (ViewMode == EALSViewMode::FirstPerson)
+	{
+		// Don't swap shoulders on first person mode
+		return;
+	}
+
+	// Switch shoulders
+	SetRightShoulder(!bRightShoulder);
+}
+
+void AALSBaseCharacter::CameraHeldAction_Implementation()
+{
+	// Switch camera mode
+	if (ViewMode == EALSViewMode::FirstPerson)
+	{
+		SetViewMode(EALSViewMode::ThirdPerson);
+	}
+	else if (ViewMode == EALSViewMode::ThirdPerson)
+	{
+		SetViewMode(EALSViewMode::FirstPerson);
+	}
+}
+
+void AALSBaseCharacter::StanceAction_Implementation()
+{
+	// Stance Action: Press "Stance Action" to toggle Standing / Crouching, double tap to Roll.
+
+	if (MovementAction != EALSMovementAction::None)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	check(World);
+
+	const float PrevStanceInputTime = LastStanceInputTime;
+	LastStanceInputTime = World->GetTimeSeconds();
+
+	if (LastStanceInputTime - PrevStanceInputTime <= RollDoubleTapTimeout)
+	{
+		// Roll
+		Replicated_PlayMontage(GetRollAnimation(), 1.15f);
+
+		if (Stance == EALSStance::Standing)
+		{
+			SetDesiredStance(EALSStance::Crouching);
+		}
+		else if (Stance == EALSStance::Crouching)
+		{
+			SetDesiredStance(EALSStance::Standing);
+		}
+		return;
+	}
+
+	if (MovementState == EALSMovementState::Grounded)
+	{
+		if (Stance == EALSStance::Standing)
+		{
+			SetDesiredStance(EALSStance::Crouching);
+			Crouch();
+		}
+		else if (Stance == EALSStance::Crouching)
+		{
+			SetDesiredStance(EALSStance::Standing);
+			UnCrouch();
+		}
+	}
+
+	// Notice: MovementState == EALSMovementState::InAir case is removed
+}
+
+void AALSBaseCharacter::WalkAction_Implementation()
+{
+	if (DesiredGait == EALSGait::Walking)
+	{
+		SetDesiredGait(EALSGait::Running);
+	}
+	else if (DesiredGait == EALSGait::Running)
+	{
+		SetDesiredGait(EALSGait::Walking);
+	}
+}
+
+void AALSBaseCharacter::RagdollAction_Implementation()
+{
+	// Ragdoll Action: Press "Ragdoll Action" to toggle the ragdoll state on or off.
+
+	if (GetMovementState() == EALSMovementState::Ragdoll)
+	{
+		ReplicatedRagdollEnd();
+	}
+	else
+	{
+		ReplicatedRagdollStart();
+	}
+}
+
+void AALSBaseCharacter::VelocityDirectionAction_Implementation()
+{
+	// Select Rotation Mode: Switch the desired (default) rotation mode to Velocity or Looking Direction.
+	// This will be the mode the character reverts back to when un-aiming
+	SetDesiredRotationMode(EALSRotationMode::VelocityDirection);
+	SetRotationMode(EALSRotationMode::VelocityDirection);
+}
+
+void AALSBaseCharacter::LookingDirectionAction_Implementation()
+{
+	SetDesiredRotationMode(EALSRotationMode::LookingDirection);
+	SetRotationMode(EALSRotationMode::LookingDirection);
 }
 
 void AALSBaseCharacter::ReplicatedRagdollStart()
@@ -1467,6 +1772,11 @@ void AALSBaseCharacter::OnRep_RotationMode(const EALSRotationMode PrevRotMode)
 void AALSBaseCharacter::OnRep_FlightState(const EALSFlightState PrevFlightState)
 {
 	OnFlightStateChanged(PrevFlightState);
+}
+
+void AALSBaseCharacter::OnRep_ViewMode(const EALSViewMode PrevViewMode)
+{
+	OnViewModeChanged(PrevViewMode);
 }
 
 void AALSBaseCharacter::OnRep_OverlayState(const EALSOverlayState PrevOverlayState)

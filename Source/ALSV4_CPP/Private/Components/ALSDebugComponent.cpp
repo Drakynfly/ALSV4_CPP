@@ -9,7 +9,6 @@
 #include "Character/Animation/ALSPlayerCameraBehavior.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
-#include "Character/ALSPlayerCharacter.h"
 
 bool UALSDebugComponent::bDebugView = false;
 bool UALSDebugComponent::bShowTraces = false;
@@ -61,7 +60,7 @@ void UALSDebugComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			AALSPlayerCameraManager* CamManager = Cast<AALSPlayerCameraManager>(Controller->PlayerCameraManager);
 			if (CamManager)
 			{
-				CamManager->DrawDebugTargets(Cast<AALSPlayerCharacter>(OwnerCharacter)->GetThirdPersonPivotTarget().GetLocation());
+				CamManager->DrawDebugTargets(OwnerCharacter->GetThirdPersonPivotTarget().GetLocation());
 			}
 		}
 	}

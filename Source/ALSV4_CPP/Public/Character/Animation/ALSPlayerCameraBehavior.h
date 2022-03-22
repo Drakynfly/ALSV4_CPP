@@ -28,6 +28,9 @@ public:
 	EALSMovementState MovementState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Read Only Data|Character Information")
+	EALSFlightState FlightState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Read Only Data|Character Information")
 	EALSMovementAction MovementAction;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Read Only Data|Character Information")

@@ -3,6 +3,8 @@
 
 
 #include "Character/Animation/ALSCharacterAnimInstance.h"
+
+#include "ALSStaticNames.h"
 #include "Character/ALSBaseCharacter.h"
 #include "Library/ALSMathLibrary.h"
 #include "Components/ALSDebugComponent.h"
@@ -11,35 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-
-static const FName NAME_BasePose_CLF(TEXT("BasePose_CLF"));
-static const FName NAME_BasePose_N(TEXT("BasePose_N"));
-static const FName NAME_Enable_FootIK_R(TEXT("Enable_FootIK_R"));
-static const FName NAME_Enable_FootIK_L(TEXT("Enable_FootIK_L"));
-static const FName NAME_Enable_HandIK_L(TEXT("Enable_HandIK_L"));
-static const FName NAME_Enable_HandIK_R(TEXT("Enable_HandIK_R"));
-static const FName NAME_Enable_Transition(TEXT("Enable_Transition"));
-static const FName NAME_FootLock_L(TEXT("FootLock_L"));
-static const FName NAME_FootLock_R(TEXT("FootLock_R"));
-static const FName NAME_Grounded___Slot(TEXT("Grounded Slot"));
-static const FName NAME_Layering_Arm_L(TEXT("Layering_Arm_L"));
-static const FName NAME_Layering_Arm_L_Add(TEXT("Layering_Arm_L_Add"));
-static const FName NAME_Layering_Arm_L_LS(TEXT("Layering_Arm_L_LS"));
-static const FName NAME_Layering_Arm_R(TEXT("Layering_Arm_R"));
-static const FName NAME_Layering_Arm_R_Add(TEXT("Layering_Arm_R_Add"));
-static const FName NAME_Layering_Arm_R_LS(TEXT("Layering_Arm_R_LS"));
-static const FName NAME_Layering_Hand_L(TEXT("Layering_Hand_L"));
-static const FName NAME_Layering_Hand_R(TEXT("Layering_Hand_R"));
-static const FName NAME_Layering_Head_Add(TEXT("Layering_Head_Add"));
-static const FName NAME_Layering_Spine_Add(TEXT("Layering_Spine_Add"));
-static const FName NAME_Mask_AimOffset(TEXT("Mask_AimOffset"));
-static const FName NAME_Mask_LandPrediction(TEXT("Mask_LandPrediction"));
-static const FName NAME__ALSCharacterAnimInstance__RotationAmount(TEXT("RotationAmount"));
-static const FName NAME_VB___foot_target_l(TEXT("VB foot_target_l"));
-static const FName NAME_VB___foot_target_r(TEXT("VB foot_target_r"));
-static const FName NAME_W_Gait(TEXT("W_Gait"));
-static const FName NAME__ALSCharacterAnimInstance__root(TEXT("root"));
-
+using namespace ALS::AnimInstance;
 
 void UALSCharacterAnimInstance::NativeInitializeAnimation()
 {
@@ -56,13 +30,13 @@ void UALSCharacterAnimInstance::NativeBeginPlay()
 	// it seems to be that the player pawn components are not really initialized
 	// when the call to NativeInitializeAnimation() happens.
 	// This is the reason why it is tried here to get the ALS debug component.
-	if (APawn* Owner = TryGetPawnOwner())
+	if (const APawn* Owner = TryGetPawnOwner())
 	{
 		ALSDebugComponent = Owner->FindComponentByClass<UALSDebugComponent>();
 	}
 }
 
-void UALSCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+void UALSCharacterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
@@ -86,6 +60,7 @@ void UALSCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	CharacterInformation.PrevMovementState = Character->GetPrevMovementState();
 	LayerBlendingValues.OverlayOverrideState = Character->GetOverlayOverrideState();
 	MovementState = Character->GetMovementState();
+	FlightState = Character->GetFlightState();
 	MovementAction = Character->GetMovementAction();
 	Stance = Character->GetStance();
 	RotationMode = Character->GetRotationMode();
@@ -170,7 +145,7 @@ void UALSCharacterAnimInstance::PlayTransitionChecked(const FALSDynamicMontagePa
 	}
 }
 
-void UALSCharacterAnimInstance::PlayDynamicTransition(float ReTriggerDelay, FALSDynamicMontageParams Parameters)
+void UALSCharacterAnimInstance::PlayDynamicTransition(const float ReTriggerDelay, const FALSDynamicMontageParams Parameters)
 {
 	if (bCanPlayDynamicTransition)
 	{
@@ -226,7 +201,7 @@ void UALSCharacterAnimInstance::OnPivotDelay()
 	Grounded.bPivot = false;
 }
 
-void UALSCharacterAnimInstance::UpdateAimingValues(float DeltaSeconds)
+void UALSCharacterAnimInstance::UpdateAimingValues(const float DeltaSeconds)
 {
 	// Interp the Aiming Rotation value to achieve smooth aiming rotation changes.
 	// Interpolating the rotation before calculating the angle ensures the value is not affected by changes
@@ -343,8 +318,8 @@ void UALSCharacterAnimInstance::UpdateFootIK(const float DeltaSeconds)
 	}
 }
 
-void UALSCharacterAnimInstance::SetFootLocking(float DeltaSeconds, FName EnableFootIKCurve, FName FootLockCurve,
-                                               FName IKFootBone, float& CurFootLockAlpha, bool& UseFootLockCurve,
+void UALSCharacterAnimInstance::SetFootLocking(const float DeltaSeconds, const FName EnableFootIKCurve, const FName FootLockCurve,
+                                               const FName IKFootBone, float& CurFootLockAlpha, bool& UseFootLockCurve,
                                                FVector& CurFootLockLoc, FRotator& CurFootLockRot)
 {
 	if (GetCurveValue(EnableFootIKCurve) <= 0.0f)
@@ -391,7 +366,7 @@ void UALSCharacterAnimInstance::SetFootLocking(float DeltaSeconds, FName EnableF
 	}
 }
 
-void UALSCharacterAnimInstance::SetFootLockOffsets(float DeltaSeconds, FVector& LocalLoc, FRotator& LocalRot)
+void UALSCharacterAnimInstance::SetFootLockOffsets(const float DeltaSeconds, FVector& LocalLoc, FRotator& LocalRot)
 {
 	FRotator RotationDifference = FRotator::ZeroRotator;
 	// Use the delta between the current and last updated rotation to find how much the foot should be rotated
@@ -418,8 +393,8 @@ void UALSCharacterAnimInstance::SetFootLockOffsets(float DeltaSeconds, FVector& 
 	LocalRot = Delta;
 }
 
-void UALSCharacterAnimInstance::SetPelvisIKOffset(float DeltaSeconds, FVector FootOffsetLTarget,
-                                                  FVector FootOffsetRTarget)
+void UALSCharacterAnimInstance::SetPelvisIKOffset(const float DeltaSeconds, const FVector FootOffsetLTarget,
+                                                  const FVector FootOffsetRTarget)
 {
 	// Calculate the Pelvis Alpha by finding the average Foot IK weight. If the alpha is 0, clear the offset.
 	FootIKValues.PelvisAlpha =
@@ -442,7 +417,7 @@ void UALSCharacterAnimInstance::SetPelvisIKOffset(float DeltaSeconds, FVector Fo
 	}
 }
 
-void UALSCharacterAnimInstance::ResetIKOffsets(float DeltaSeconds)
+void UALSCharacterAnimInstance::ResetIKOffsets(const float DeltaSeconds)
 {
 	// Interp Foot IK offsets back to 0
 	FootIKValues.FootOffset_L_Location = FMath::VInterpTo(FootIKValues.FootOffset_L_Location,
@@ -455,7 +430,7 @@ void UALSCharacterAnimInstance::ResetIKOffsets(float DeltaSeconds)
 	                                                      FRotator::ZeroRotator, DeltaSeconds, 15.0f);
 }
 
-void UALSCharacterAnimInstance::SetFootOffsets(float DeltaSeconds, FName EnableFootIKCurve, FName IKFootBone,
+void UALSCharacterAnimInstance::SetFootOffsets(const float DeltaSeconds, FName EnableFootIKCurve, FName IKFootBone,
                                                FName RootBone, FVector& CurLocationTarget, FVector& CurLocationOffset,
                                                FRotator& CurRotationOffset)
 {
@@ -509,7 +484,7 @@ void UALSCharacterAnimInstance::SetFootOffsets(float DeltaSeconds, FName EnableF
 		FVector ImpactNormal = HitResult.ImpactNormal;
 
 		// Step 1.1: Find the difference in location from the Impact point and the expected (flat) floor location.
-		// These values are offset by the nomrmal multiplied by the
+		// These values are offset by the normal multiplied by the
 		// foot height to get better behavior on angled surfaces.
 		CurLocationTarget = (ImpactPoint + ImpactNormal * Config.FootHeight) -
 			(IKFootFloorLoc + FVector(0, 0, Config.FootHeight));
@@ -545,11 +520,11 @@ void UALSCharacterAnimInstance::RotateInPlaceCheck()
 	}
 }
 
-void UALSCharacterAnimInstance::TurnInPlaceCheck(float DeltaSeconds)
+void UALSCharacterAnimInstance::TurnInPlaceCheck(const float DeltaSeconds)
 {
 	// Step 1: Check if Aiming angle is outside of the Turn Check Min Angle, and if the Aim Yaw Rate is below the Aim Yaw Rate Limit.
 	// If so, begin counting the Elapsed Delay Time. If not, reset the Elapsed Delay Time.
-	// This ensures the conditions remain true for a sustained peroid of time before turning in place.
+	// This ensures the conditions remain true for a sustained period of time before turning in place.
 	if (FMath::Abs(AimingValues.AimingAngle.X) <= TurnInPlaceValues.TurnCheckMinAngle ||
 		CharacterInformation.AimYawRate >= TurnInPlaceValues.AimYawRateLimit)
 	{
@@ -611,7 +586,7 @@ void UALSCharacterAnimInstance::DynamicTransitionCheck()
 	}
 }
 
-void UALSCharacterAnimInstance::UpdateMovementValues(float DeltaSeconds)
+void UALSCharacterAnimInstance::UpdateMovementValues(const float DeltaSeconds)
 {
 	// Interp and set the Velocity Blend.
 	const FALSVelocityBlend& TargetBlend = CalculateVelocityBlend();
@@ -625,9 +600,9 @@ void UALSCharacterAnimInstance::UpdateMovementValues(float DeltaSeconds)
 
 	// Set the Relative Acceleration Amount and Interp the Lean Amount.
 	RelativeAccelerationAmount = CalculateRelativeAccelerationAmount();
-	LeanAmount.LR = FMath::FInterpTo(LeanAmount.LR, (float)RelativeAccelerationAmount.Y, DeltaSeconds,
+	LeanAmount.LR = FMath::FInterpTo(LeanAmount.LR, RelativeAccelerationAmount.Y, DeltaSeconds,
 	                                 Config.GroundedLeanInterpSpeed);
-	LeanAmount.FB = FMath::FInterpTo(LeanAmount.FB, (float)RelativeAccelerationAmount.X, DeltaSeconds,
+	LeanAmount.FB = FMath::FInterpTo(LeanAmount.FB, RelativeAccelerationAmount.X, DeltaSeconds,
 	                                 Config.GroundedLeanInterpSpeed);
 
 	// Set the Walk Run Blend
@@ -659,7 +634,7 @@ void UALSCharacterAnimInstance::UpdateRotationValues()
 	Grounded.RYaw = LROffset.Y;
 }
 
-void UALSCharacterAnimInstance::UpdateInAirValues(float DeltaSeconds)
+void UALSCharacterAnimInstance::UpdateInAirValues(const float DeltaSeconds)
 {
 	// Update the fall speed. Setting this value only while in the air allows you to use it within the AnimGraph for the landing strength.
 	// If not, the Z velocity would return to 0 on landing.
@@ -681,8 +656,8 @@ void UALSCharacterAnimInstance::UpdateRagdollValues()
 	FlailRate = FMath::GetMappedRangeValueClamped<float, float>({0.0f, 1000.0f}, {0.0f, 1.0f}, VelocityLength);
 }
 
-float UALSCharacterAnimInstance::GetAnimCurveClamped(const FName& Name, float Bias, float ClampMin,
-                                                     float ClampMax) const
+float UALSCharacterAnimInstance::GetAnimCurveClamped(const FName& Name, const float Bias, const float ClampMin,
+                                                     const float ClampMax) const
 {
 	return FMath::Clamp(GetCurveValue(Name) + Bias, ClampMin, ClampMax);
 }
@@ -865,14 +840,14 @@ EALSMovementDirection UALSCharacterAnimInstance::CalculateMovementDirection() co
 	return UALSMathLibrary::CalculateQuadrant(MovementDirection, 70.0f, -70.0f, 110.0f, -110.0f, 5.0f, Delta.Yaw);
 }
 
-void UALSCharacterAnimInstance::TurnInPlace(FRotator TargetRotation, float PlayRateScale, float StartTime,
-                                            bool OverrideCurrent)
+void UALSCharacterAnimInstance::TurnInPlace(const FRotator TargetRotation, const float PlayRateScale, const float StartTime,
+                                           const  bool OverrideCurrent)
 {
 	// Step 1: Set Turn Angle
 	FRotator Delta = TargetRotation - CharacterInformation.CharacterActorRotation;
 	Delta.Normalize();
 	const float TurnAngle = Delta.Yaw;
-	
+
 	// Step 2: Choose Turn Asset based on the Turn Angle and Stance
 	FALSTurnInPlaceAsset TargetTurnAsset;
 	if (Stance.Standing())

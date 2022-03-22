@@ -5,6 +5,7 @@
 #include "Components/ALSMantleComponent.h"
 
 
+#include "ALSStaticNames.h"
 #include "Character/ALSCharacter.h"
 #include "Character/Animation/ALSCharacterAnimInstance.h"
 #include "Components/ALSDebugComponent.h"
@@ -13,18 +14,14 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Library/ALSMathLibrary.h"
 
-
-const FName NAME_MantleEnd(TEXT("MantleEnd"));
-const FName NAME_MantleUpdate(TEXT("MantleUpdate"));
-const FName NAME_MantleTimeline(TEXT("MantleTimeline"));
-
-FName UALSMantleComponent::NAME_IgnoreOnlyPawn(TEXT("IgnoreOnlyPawn"));
-
+using namespace ALS::MantleComponent;
 
 UALSMantleComponent::UALSMantleComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
+
+	MantleObjectDetectionProfile = NAME_IgnoreOnlyPawn;
 
 	MantleTimeline = CreateDefaultSubobject<UTimelineComponent>(NAME_MantleTimeline);
 }
@@ -36,7 +33,7 @@ void UALSMantleComponent::BeginPlay()
 	if (GetOwner())
 	{
 		OwnerCharacter = Cast<AALSBaseCharacter>(GetOwner());
-		if (OwnerCharacter)
+		if (IsValid(OwnerCharacter))
 		{
 			ALSDebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
 
@@ -55,15 +52,13 @@ void UALSMantleComponent::BeginPlay()
 			OwnerCharacter->JumpPressedDelegate.AddUniqueDynamic(this, &UALSMantleComponent::OnOwnerJumpInput);
 			OwnerCharacter->RagdollStateChangedDelegate.AddUniqueDynamic(
 				this, &UALSMantleComponent::OnOwnerRagdollStateChanged);
-
-			//DebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
-
 			// Adjust for seamless vaulting. Ensures that the auto-vault will always trigger at the height that stepping up cuts out.
 			// @todo this does not adjust if MaxStepHeight is changed at runtime
 			AutomaticTraceSettings.MinLedgeHeight = OwnerCharacter->GetCharacterMovement()->MaxStepHeight;
 		}
 	}
 }
+
 
 void UALSMantleComponent::TickComponent(const float DeltaTime, const ELevelTick TickType,
                                         FActorComponentTickFunction* ThisTickFunction)
@@ -74,7 +69,7 @@ void UALSMantleComponent::TickComponent(const float DeltaTime, const ELevelTick 
 	{
 		if (OwnerCharacter->GetMovementState() == EALSMovementState::Freefall)
 		{
-			// Perform a mantle check if falling.
+			// Perform a mantle check if falling while movement input is pressed or if always checking.
 			if (OwnerCharacter->HasMovementInput() || bAlwaysCatchIfFalling)
 			{
 				MantleCheck(FallingTraceSettings, EDrawDebugTrace::Type::ForOneFrame);
@@ -131,7 +126,7 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
 	// Step 3: Set the Mantle Target and calculate the Starting Offset
 	// (offset amount between the actor and target transform).
 	MantleTarget = MantleLedgeWS.Transform;
-	MantleActualStartOffset = UALSMathLibrary::TransfromSub(OwnerCharacter->GetActorTransform(), MantleTarget);
+	MantleActualStartOffset = UALSMathLibrary::TransformSub(OwnerCharacter->GetActorTransform(), MantleTarget);
 
 	// Step 4: Calculate the Animated Start Offset from the Target Location.
 	// This would be the location the actual animation starts at relative to the Target Transform.
@@ -139,7 +134,7 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
 	RotatedVector.Z = MantleParams.StartingOffset.Z;
 	const FTransform StartOffset(MantleTarget.Rotator(), MantleTarget.GetLocation() - RotatedVector,
 	                             FVector::OneVector);
-	MantleAnimatedStartOffset = UALSMathLibrary::TransfromSub(StartOffset, MantleTarget);
+	MantleAnimatedStartOffset = UALSMathLibrary::TransformSub(StartOffset, MantleTarget);
 
 	// Step 5: Clear the Character Movement Mode and set the Movement State to Mantling
 	OwnerCharacter->GetCharacterMovement()->SetMovementMode(MOVE_None);
@@ -155,7 +150,7 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
 	MantleTimeline->SetPlayRate(MantleParams.PlayRate);
 	MantleTimeline->PlayFromStart();
 
-	// Step 7: Play the Anim Montaget if valid.
+	// Step 7: Play the Anim Montage if valid.
 	if (MantleParams.AnimMontage && OwnerCharacter->GetMesh()->GetAnimInstance())
 	{
 		OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_Play(MantleParams.AnimMontage, MantleParams.PlayRate,
@@ -323,7 +318,7 @@ void UALSMantleComponent::Multicast_MantleStart_Implementation(const float Mantl
 	}
 }
 
-void UALSMantleComponent::MantleUpdate(float BlendIn)
+void UALSMantleComponent::MantleUpdate(const float BlendIn)
 {
 	if (!OwnerCharacter)
 	{
@@ -376,13 +371,13 @@ void UALSMantleComponent::MantleUpdate(float BlendIn)
 	// Blend from the currently blending transforms into the final mantle target using the X
 	// value of the Position/Correction Curve.
 	const FTransform& ResultLerp = UKismetMathLibrary::TLerp(
-		UALSMathLibrary::TransfromAdd(MantleTarget, ResultTransform), MantleTarget,
+		UALSMathLibrary::TransformAdd(MantleTarget, ResultTransform), MantleTarget,
 		PositionAlpha);
 
 	// Initial Blend In (controlled in the timeline curve) to allow the actor to blend into the Position/Correction
 	// curve at the midpoint. This prevents pops when mantling an object lower than the animated mantle.
 	const FTransform& LerpedTarget =
-		UKismetMathLibrary::TLerp(UALSMathLibrary::TransfromAdd(MantleTarget, MantleActualStartOffset), ResultLerp,
+		UKismetMathLibrary::TLerp(UALSMathLibrary::TransformAdd(MantleTarget, MantleActualStartOffset), ResultLerp,
 		                          BlendIn);
 
 	// Step 4: Set the actors location and rotation to the Lerped Target.

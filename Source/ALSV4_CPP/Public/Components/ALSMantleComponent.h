@@ -14,7 +14,6 @@
 // forward declarations
 class UALSDebugComponent;
 
-
 UCLASS(Blueprintable, BlueprintType)
 class ALSV4_CPP_API UALSMantleComponent : public UActorComponent
 {
@@ -79,10 +78,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
 	TObjectPtr<UCurveFloat> MantleTimelineCurve;
 
-	static FName NAME_IgnoreOnlyPawn;
 	/** Profile to use to detect objects we allow mantling */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
-	FName MantleObjectDetectionProfile = NAME_IgnoreOnlyPawn;
+	FName MantleObjectDetectionProfile;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
 	TEnumAsByte<ECollisionChannel> WalkableSurfaceDetectionChannel = ECC_Visibility;
