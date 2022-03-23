@@ -108,7 +108,7 @@ void AALSBaseCharacter::BeginPlay()
 	// If we're in networked game, disable curved movement
 	bEnableNetworkOptimizations = !IsNetMode(NM_Standalone);
 
-	// Make sure the mesh and animbp update after the CharacterBP to ensure it gets the most recent values.
+	// Make sure the mesh and AnimBP update after the CharacterBP to ensure it gets the most recent values.
 	GetMesh()->AddTickPrerequisiteActor(this);
 
 	// Force update states to use the initial desired values.
@@ -632,9 +632,7 @@ void AALSBaseCharacter::RemoveMovementModifier(const FName ModifierID)
 
 void AALSBaseCharacter::SetMovementModifierTime(const FName ModifierID, const float Time)
 {
-	auto Modifier = MovementModifiers.FindByKey(ModifierID);
-
-	if (Modifier)
+	if (FALSMovementModifier* Modifier = MovementModifiers.FindByKey(ModifierID))
 	{
 		Modifier->SetTime(Time);
 		MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
@@ -954,7 +952,7 @@ void AALSBaseCharacter::OnRotationModeChanged(EALSRotationMode PreviousRotationM
 	if (RotationMode == EALSRotationMode::VelocityDirection && ViewMode == EALSViewMode::FirstPerson)
 	{
 		// If the new rotation mode is Velocity Direction and the character is in First Person,
-		// set the viewmode to Third Person.
+		// set the ViewMode to Third Person.
 		SetViewMode(EALSViewMode::ThirdPerson);
 	}
 
@@ -1012,7 +1010,7 @@ void AALSBaseCharacter::OnOverlayStateChanged(const EALSOverlayState PreviousSta
 {
 }
 
-void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PrevVisibleMesh)
+void AALSBaseCharacter::OnVisibleMeshChanged(const USkeletalMesh* PreviousSkeletalMesh)
 {
 	// Update the Skeletal Mesh before we update materials and anim bp variables
 	GetMesh()->SetSkeletalMesh(VisibleMesh);
@@ -1228,7 +1226,7 @@ void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 		const bool bCanUpdateMovingRot = ((bIsMoving && bHasMovementInput) || Speed > 150.0f) && !HasAnyRootMotion();
 		if (bCanUpdateMovingRot)
 		{
-			const float GroundedRotationRate = CalculateGroundedRotationRate();
+			const double GroundedRotationRate = CalculateGroundedRotationRate();
 			if (RotationMode == EALSRotationMode::VelocityDirection)
 			{
 				// Velocity Direction Rotation
@@ -1238,7 +1236,7 @@ void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 			else if (RotationMode == EALSRotationMode::LookingDirection)
 			{
 				// Looking Direction Rotation
-				float YawValue;
+				double YawValue;
 				if (Gait == EALSGait::Sprinting)
 				{
 					YawValue = LastVelocityRotation.Yaw;
@@ -1323,7 +1321,7 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 
 	const float FlightRotationRate = CalculateFlightRotationRate();
 
-	// Map distance to ground to a unit scaler.
+	// Map distance to ground to a unit scalar.
 	const float Alpha_Altitude = FMath::GetMappedRangeValueClamped(FVector2f{0.f, CheckAltitude}, FVector2f{0.f, 1.f}, RelativeAltitude);
 
 	// Combine unit scalars equal to smaller.
@@ -1332,8 +1330,8 @@ void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
 	// Calculate input leaning.
 	const FVector Lean = GetActorRotation().UnrotateVector(GetMovementInput().GetSafeNormal()) * MaxFlightLean * RotationAlpha;
 
-	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, (float)Lean.X * -1.f, DeltaTime, FlightRotationRate);
-	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, (float)Lean.Y, DeltaTime, FlightRotationRate);
+	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, Lean.X * -1, DeltaTime, FlightRotationRate);
+	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, Lean.Y, DeltaTime, FlightRotationRate);
 
 	const bool bCanUpdateMovingRot = ((bIsMoving && bHasMovementInput) || Speed > 150.0f) && !HasAnyRootMotion();
 	if (bCanUpdateMovingRot)
@@ -1380,7 +1378,7 @@ void AALSBaseCharacter::UpdateSwimmingRotation(const float DeltaTime)
 	//@todo this is a visual effect that should probably be handled by animations, not code.
 	float const Lean = FMath::GetMappedRangeValueUnclamped(FVector2f{0, 3}, FVector2f{0, 90}, GetMyMovementComponent()->GetMappedSpeed());
 
-	SmoothCharacterRotation({Lean * (float)-Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
+	SmoothCharacterRotation({Lean * -Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
 }
 
 float AALSBaseCharacter::FlightDistanceCheck(float CheckDistance, FVector Direction) const

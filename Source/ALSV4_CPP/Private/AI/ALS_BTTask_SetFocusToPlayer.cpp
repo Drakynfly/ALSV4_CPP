@@ -13,7 +13,7 @@ UALS_BTTask_SetFocusToPlayer::UALS_BTTask_SetFocusToPlayer()
 EBTNodeResult::Type UALS_BTTask_SetFocusToPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	APawn* Pawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-	if (Pawn)
+	if (IsValid(Pawn))
 	{
 		OwnerComp.GetAIOwner()->SetFocus(Pawn);
 		return EBTNodeResult::Succeeded;

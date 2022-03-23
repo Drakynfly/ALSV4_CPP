@@ -9,11 +9,11 @@ void UALSAnimNotifyCameraShake::Notify(USkeletalMeshComponent* MeshComp, UAnimSe
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	APawn* OwnerPawn = Cast<APawn>(MeshComp->GetOwner());
-	if (OwnerPawn)
+	const APawn* OwnerPawn = Cast<APawn>(MeshComp->GetOwner());
+	if (IsValid(OwnerPawn))
 	{
 		APlayerController* OwnerController = Cast<APlayerController>(OwnerPawn->GetController());
-		if (OwnerController)
+		if (IsValid(OwnerController))
 		{
 			OwnerController->ClientStartCameraShake(ShakeClass, Scale);
 		}

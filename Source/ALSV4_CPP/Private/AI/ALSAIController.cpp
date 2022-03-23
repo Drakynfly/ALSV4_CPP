@@ -26,7 +26,7 @@ FVector AALSAIController::GetFocalPointOnActor(const AActor* Actor) const
 		return FAISystem::InvalidLocation;
 	}
 	const APawn* FocusPawn = Cast<APawn>(Actor);
-	if (FocusPawn)
+	if (IsValid(FocusPawn))
 	{
 		// Focus on pawn's eye view point
 		return FocusPawn->GetPawnViewLocation();

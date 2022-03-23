@@ -31,7 +31,7 @@ void AALSPlayerController::OnPossess(APawn* NewPawn)
 	SetupInputs();
 
 	UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-	if (DebugComp)
+	if (IsValid(DebugComp))
 	{
 		DebugComp->OnPlayerControllerInitialized(this);
 	}
@@ -45,7 +45,7 @@ void AALSPlayerController::OnRep_Pawn()
 	SetupInputs();
 
 	UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-	if (DebugComp)
+	if (IsValid(DebugComp))
 	{
 		DebugComp->OnPlayerControllerInitialized(this);
 	}
@@ -56,7 +56,7 @@ void AALSPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
-	if (EnhancedInputComponent)
+	if (IsValid(EnhancedInputComponent))
 	{
 		EnhancedInputComponent->ClearActionEventBindings();
 		EnhancedInputComponent->ClearActionValueBindings();
@@ -77,7 +77,7 @@ void AALSPlayerController::BindActions(UInputMappingContext* Context)
 	{
 		const TArray<FEnhancedActionKeyMapping>& Mappings = Context->GetMappings();
 		UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
-		if (EnhancedInputComponent)
+		if (IsValid(EnhancedInputComponent))
 		{
 			// There may be more than one keymapping assigned to one action. So, first filter duplicate action entries to prevent multiple delegate bindings
 			TSet<const UInputAction*> UniqueActions;
@@ -102,8 +102,8 @@ void AALSPlayerController::SetupInputs()
 			FModifyContextOptions Options;
 			Options.bForceImmediately = 1;
 			Subsystem->AddMappingContext(DefaultInputMappingContext, 1, Options);
-			UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-			if (DebugComp)
+			const UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
+			if (IsValid(DebugComp))
 			{
 				// Do only if we have debug component
 				Subsystem->AddMappingContext(DebugInputMappingContext, 0, Options);
@@ -239,7 +239,7 @@ void AALSPlayerController::DebugToggleHudAction(const FInputActionValue& Value)
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleHud();
 		}
@@ -251,7 +251,7 @@ void AALSPlayerController::DebugToggleDebugViewAction(const FInputActionValue& V
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleDebugView();
 		}
@@ -263,7 +263,7 @@ void AALSPlayerController::DebugToggleTracesAction(const FInputActionValue& Valu
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleTraces();
 		}
@@ -275,7 +275,7 @@ void AALSPlayerController::DebugToggleShapesAction(const FInputActionValue& Valu
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleDebugShapes();
 		}
@@ -287,7 +287,7 @@ void AALSPlayerController::DebugToggleLayerColorsAction(const FInputActionValue&
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleLayerColors();
 		}
@@ -299,7 +299,7 @@ void AALSPlayerController::DebugToggleCharacterInfoAction(const FInputActionValu
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleCharacterInfo();
 		}
@@ -311,7 +311,7 @@ void AALSPlayerController::DebugToggleSlomoAction(const FInputActionValue& Value
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleSlomo();
 		}
@@ -323,7 +323,7 @@ void AALSPlayerController::DebugFocusedCharacterCycleAction(const FInputActionVa
 	if (PossessedCharacter)
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->FocusedDebugCharacterCycle(Value.GetMagnitude() > 0);
 		}
@@ -335,7 +335,7 @@ void AALSPlayerController::DebugToggleMeshAction(const FInputActionValue& Value)
 	if (PossessedCharacter && Value.Get<bool>())
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->ToggleDebugMesh();
 		}
@@ -347,7 +347,7 @@ void AALSPlayerController::DebugOpenOverlayMenuAction(const FInputActionValue& V
 	if (PossessedCharacter)
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->OpenOverlayMenu(Value.Get<bool>());
 		}
@@ -359,7 +359,7 @@ void AALSPlayerController::DebugOverlayMenuCycleAction(const FInputActionValue& 
 	if (PossessedCharacter)
 	{
 		UALSDebugComponent* DebugComp = Cast<UALSDebugComponent>(PossessedCharacter->GetComponentByClass(UALSDebugComponent::StaticClass()));
-		if (DebugComp)
+		if (IsValid(DebugComp))
 		{
 			DebugComp->OverlayMenuCycle(Value.GetMagnitude() > 0);
 		}

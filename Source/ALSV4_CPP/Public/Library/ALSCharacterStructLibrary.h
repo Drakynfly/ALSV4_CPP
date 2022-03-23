@@ -213,8 +213,8 @@ struct FALSMovementStanceSettings
 	FALSMovementSettings Crouching;
 
 	// These are not stances, per se, but they fix the best here. I do not like this, but the other option is to have a
-	// new struct or many more entries in FALSMovementSettings. I consider this a workable solution only becuase
-	// this struct isnt used anywhere else.
+	// new struct or many more entries in FALSMovementSettings. I consider this a workable solution only because
+	// this struct isn't used anywhere else.
 
 	UPROPERTY(EditAnywhere, Category = "Character Struct Library")
 	FALSMovementSettings Flying;
@@ -277,7 +277,7 @@ struct FALSHitFX : public FTableRowBase
 	EALSSpawnType DecalSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Decal", meta = (EditCondition = "DecalSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<enum EAttachLocation::Type> DecalAttachmentType;
+	TEnumAsByte<EAttachLocation::Type> DecalAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Decal")
 	float DecalLifeSpan = 10.0f;
@@ -298,7 +298,7 @@ struct FALSHitFX : public FTableRowBase
 	EALSSpawnType NiagaraSpawnType = EALSSpawnType::Attached;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara", meta = (EditCondition = "NiagaraSpawnType == EALSSpawnType::Attached"))
-	TEnumAsByte<enum EAttachLocation::Type> NiagaraAttachmentType;
+	TEnumAsByte<EAttachLocation::Type> NiagaraAttachmentType;
 
 	UPROPERTY(EditAnywhere, Category = "Niagara")
 	FVector NiagaraLocationOffset = FVector::ZeroVector;

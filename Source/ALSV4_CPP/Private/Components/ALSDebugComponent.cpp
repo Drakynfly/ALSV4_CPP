@@ -24,7 +24,7 @@ UALSDebugComponent::UALSDebugComponent()
 #endif
 }
 
-void UALSDebugComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+void UALSDebugComponent::TickComponent(const float DeltaTime, const ELevelTick TickType,
                                        FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -54,11 +54,11 @@ void UALSDebugComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	{
 		DrawDebugSpheres();
 
-		APlayerController* Controller = Cast<APlayerController>(OwnerCharacter->GetController());
-		if (Controller)
+		const APlayerController* Controller = Cast<APlayerController>(OwnerCharacter->GetController());
+		if (IsValid(Controller))
 		{
 			AALSPlayerCameraManager* CamManager = Cast<AALSPlayerCameraManager>(Controller->PlayerCameraManager);
-			if (CamManager)
+			if (IsValid(CamManager))
 			{
 				CamManager->DrawDebugTargets(OwnerCharacter->GetThirdPersonPivotTarget().GetLocation());
 			}
@@ -67,7 +67,7 @@ void UALSDebugComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 #endif
 }
 
-void UALSDebugComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
+void UALSDebugComponent::OnComponentDestroyed(const bool bDestroyingHierarchy)
 {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 
@@ -78,7 +78,7 @@ void UALSDebugComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 	bShowLayerColors = false;
 }
 
-void UALSDebugComponent::FocusedDebugCharacterCycle(bool bValue)
+void UALSDebugComponent::FocusedDebugCharacterCycle(const bool bValue)
 {
 	// Refresh list, so we can also debug runtime spawned characters & remove despawned characters back
 	DetectDebuggableCharactersInWorld();
@@ -151,7 +151,7 @@ void UALSDebugComponent::DetectDebuggableCharactersInWorld()
 	}
 }
 
-void UALSDebugComponent::ToggleGlobalTimeDilationLocal(float TimeDilation)
+void UALSDebugComponent::ToggleGlobalTimeDilationLocal(const float TimeDilation)
 {
 	if (UKismetSystemLibrary::IsStandalone(this))
 	{
@@ -169,13 +169,13 @@ void UALSDebugComponent::ToggleDebugView()
 {
 	bDebugView = !bDebugView;
 
-	AALSPlayerCameraManager* CamManager = Cast<AALSPlayerCameraManager>(
+	const AALSPlayerCameraManager* CamManager = Cast<AALSPlayerCameraManager>(
 		UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0));
-	if (CamManager)
+	if (IsValid(CamManager))
 	{
 		UALSPlayerCameraBehavior* CameraBehavior = Cast<UALSPlayerCameraBehavior>(
 			CamManager->CameraBehavior->GetAnimInstance());
-		if (CameraBehavior)
+		if (IsValid(CameraBehavior))
 		{
 			CameraBehavior->bDebugView = bDebugView;
 		}
@@ -207,20 +207,19 @@ void UALSDebugComponent::ToggleDebugMesh()
 
 /** Util for drawing result of single line trace  */
 void UALSDebugComponent::DrawDebugLineTraceSingle(const UWorld* World,
-	                                                const FVector& Start,
-	                                                const FVector& End,
-	                                                EDrawDebugTrace::Type
-	                                                DrawDebugType,
-	                                                bool bHit,
-	                                                const FHitResult& OutHit,
-	                                                FLinearColor TraceColor,
-	                                                FLinearColor TraceHitColor,
-	                                                float DrawTime)
+                                                  const FVector& Start,
+                                                  const FVector& End,
+                                                  const EDrawDebugTrace::Type DrawDebugType,
+                                                  const bool bHit,
+                                                  const FHitResult& OutHit,
+                                                  const FLinearColor TraceColor,
+                                                  const FLinearColor TraceHitColor,
+                                                  const float DrawTime)
 {
 	if (DrawDebugType != EDrawDebugTrace::None)
 	{
-		bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
-		float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
+		const bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
+		const float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
 
 		if (bHit && OutHit.bBlockingHit)
 		{
@@ -238,20 +237,20 @@ void UALSDebugComponent::DrawDebugLineTraceSingle(const UWorld* World,
 }
 
 void UALSDebugComponent::DrawDebugCapsuleTraceSingle(const UWorld* World,
-	                                                   const FVector& Start,
-	                                                   const FVector& End,
-	                                                   const FCollisionShape& CollisionShape,
-	                                                   EDrawDebugTrace::Type DrawDebugType,
-	                                                   bool bHit,
-	                                                   const FHitResult& OutHit,
-	                                                   FLinearColor TraceColor,
-	                                                   FLinearColor TraceHitColor,
-	                                                   float DrawTime)
+	                                                 const FVector& Start,
+	                                                 const FVector& End,
+	                                                 const FCollisionShape& CollisionShape,
+	                                                 const EDrawDebugTrace::Type DrawDebugType,
+	                                                 const bool bHit,
+	                                                 const FHitResult& OutHit,
+	                                                 const FLinearColor TraceColor,
+	                                                 const FLinearColor TraceHitColor,
+	                                                 const float DrawTime)
 {
 	if (DrawDebugType != EDrawDebugTrace::None)
 	{
-		bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
-		float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
+		const bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
+		const float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
 
 		if (bHit && OutHit.bBlockingHit)
 		{
@@ -277,11 +276,11 @@ void UALSDebugComponent::DrawDebugCapsuleTraceSingle(const UWorld* World,
 static void DrawDebugSweptSphere(const UWorld* InWorld,
 	                        FVector const& Start,
 	                        FVector const& End,
-	                        float Radius,
+	                        const float Radius,
 	                        FColor const& Color,
-	                        bool bPersistentLines = false,
-	                        float LifeTime = -1.f,
-	                        uint8 DepthPriority = 0)
+	                        const bool bPersistentLines = false,
+	                        const float LifeTime = -1.f,
+	                        const uint8 DepthPriority = 0)
 {
 	FVector const TraceVec = End - Start;
 	float const Dist = TraceVec.Size();
@@ -297,17 +296,17 @@ void UALSDebugComponent::DrawDebugSphereTraceSingle(const UWorld* World,
 	                                                  const FVector& Start,
 	                                                  const FVector& End,
 	                                                  const FCollisionShape& CollisionShape,
-	                                                  EDrawDebugTrace::Type DrawDebugType,
-	                                                  bool bHit,
+	                                                  const EDrawDebugTrace::Type DrawDebugType,
+	                                                  const bool bHit,
 	                                                  const FHitResult& OutHit,
-	                                                  FLinearColor TraceColor,
-	                                                  FLinearColor TraceHitColor,
-	                                                  float DrawTime)
+	                                                  const FLinearColor TraceColor,
+	                                                  const FLinearColor TraceHitColor,
+	                                                  const float DrawTime)
 {
 	if (DrawDebugType != EDrawDebugTrace::None)
 	{
-		bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
-		float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
+		const bool bPersistent = DrawDebugType == EDrawDebugTrace::Persistent;
+		const float LifeTime = (DrawDebugType == EDrawDebugTrace::ForDuration) ? DrawTime : 0.f;
 
 		if (bHit && OutHit.bBlockingHit)
 		{

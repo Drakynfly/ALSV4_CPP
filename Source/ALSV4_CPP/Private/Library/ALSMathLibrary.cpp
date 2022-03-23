@@ -71,7 +71,7 @@ bool UALSMathLibrary::CapsuleHasRoomCheck(UCapsuleComponent* Capsule, FVector Ta
 	return !(HitResult.bBlockingHit || HitResult.bStartPenetrating);
 }
 
-bool UALSMathLibrary::AngleInRange(float Angle, float MinAngle, float MaxAngle, float Buffer, bool IncreaseBuffer)
+bool UALSMathLibrary::AngleInRange(const float Angle, const float MinAngle, const float MaxAngle, const float Buffer, const bool IncreaseBuffer)
 {
 	if (IncreaseBuffer)
 	{
@@ -80,10 +80,10 @@ bool UALSMathLibrary::AngleInRange(float Angle, float MinAngle, float MaxAngle, 
 	return Angle >= MinAngle + Buffer && Angle <= MaxAngle - Buffer;
 }
 
-EALSMovementDirection UALSMathLibrary::CalculateQuadrant(EALSMovementDirection Current, float FRThreshold,
-                                                         float FLThreshold,
-                                                         float BRThreshold, float BLThreshold, float Buffer,
-                                                         float Angle)
+EALSMovementDirection UALSMathLibrary::CalculateQuadrant(const EALSMovementDirection Current, const float FRThreshold,
+                                                         const float FLThreshold, const float BRThreshold,
+                                                         const float BLThreshold, const float Buffer,
+                                                         const float Angle)
 {
 	// Take the input angle and determine its quadrant (direction). Use the current Movement Direction to increase or
 	// decrease the buffers on the angle ranges for each quadrant.

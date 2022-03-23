@@ -12,7 +12,7 @@ void UALSAnimNotifyGroundedEntryState::Notify(USkeletalMeshComponent* MeshComp, 
 	Super::Notify(MeshComp, Animation, EventReference);
 
 	AALSBaseCharacter* Character = Cast<AALSBaseCharacter>(MeshComp->GetOwner());
-	if (Character)
+	if (IsValid(Character))
 	{
 		Character->SetGroundedEntryState(GroundedEntryState);
 	}

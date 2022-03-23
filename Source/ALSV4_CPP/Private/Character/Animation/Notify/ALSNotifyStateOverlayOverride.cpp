@@ -10,7 +10,8 @@ void UALSNotifyStateOverlayOverride::NotifyBegin(USkeletalMeshComponent* MeshCom
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-	if (AALSBaseCharacter* Character = Cast<AALSBaseCharacter>(MeshComp->GetOwner()))
+	AALSBaseCharacter* Character = Cast<AALSBaseCharacter>(MeshComp->GetOwner());
+	if (IsValid(Character))
 	{
 		Character->SetOverlayOverrideState(OverlayOverrideState);
 	}
@@ -20,7 +21,8 @@ void UALSNotifyStateOverlayOverride::NotifyEnd(USkeletalMeshComponent* MeshComp,
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 
-	if (AALSBaseCharacter* Character = Cast<AALSBaseCharacter>(MeshComp->GetOwner()))
+	AALSBaseCharacter* Character = Cast<AALSBaseCharacter>(MeshComp->GetOwner());
+	if (IsValid(Character))
 	{
 		// @todo maybe set to a default stored in character instead of 0???
 		Character->SetOverlayOverrideState(0);

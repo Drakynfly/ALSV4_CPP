@@ -12,7 +12,7 @@ void UALSNotifyStateMovementAction::NotifyBegin(USkeletalMeshComponent* MeshComp
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
 	AALSBaseCharacter* BaseCharacter = Cast<AALSBaseCharacter>(MeshComp->GetOwner());
-	if (BaseCharacter)
+	if (IsValid(BaseCharacter))
 	{
 		BaseCharacter->SetMovementAction(MovementAction);
 	}
@@ -24,7 +24,7 @@ void UALSNotifyStateMovementAction::NotifyEnd(USkeletalMeshComponent* MeshComp, 
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 
 	AALSBaseCharacter* BaseCharacter = Cast<AALSBaseCharacter>(MeshComp->GetOwner());
-	if (BaseCharacter && BaseCharacter->GetMovementAction() == MovementAction)
+	if (IsValid(BaseCharacter) && BaseCharacter->GetMovementAction() == MovementAction)
 	{
 		BaseCharacter->SetMovementAction(EALSMovementAction::None);
 	}

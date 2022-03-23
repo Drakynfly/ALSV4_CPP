@@ -31,7 +31,7 @@ void AALSCharacter::ClearHeldObject()
 }
 
 void AALSCharacter::AttachToHand(UStaticMesh* NewStaticMesh, USkeletalMesh* NewSkeletalMesh, UClass* NewAnimClass,
-                                 bool bLeftHand, FVector Offset)
+                                 const bool bLeftHand, const FVector Offset)
 {
 	ClearHeldObject();
 
@@ -95,13 +95,13 @@ FVector AALSCharacter::GetFirstPersonCameraTarget()
 	return GetMesh()->GetSocketLocation(TEXT("FP_Camera"));
 }
 
-void AALSCharacter::OnOverlayStateChanged(EALSOverlayState PreviousState)
+void AALSCharacter::OnOverlayStateChanged(const EALSOverlayState PreviousState)
 {
 	Super::OnOverlayStateChanged(PreviousState);
 	UpdateHeldObject();
 }
 
-void AALSCharacter::Tick(float DeltaTime)
+void AALSCharacter::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 

@@ -319,7 +319,7 @@ void UALSMantleComponent::Multicast_MantleStart_Implementation(const float Mantl
 }
 
 // This function is called by "MantleTimeline" using BindUFunction in UALSMantleComponent::BeginPlay during the default settings initialization.
-void UALSMantleComponent::MantleUpdate(float BlendIn)
+void UALSMantleComponent::MantleUpdate(const float BlendIn)
 {
 	if (!OwnerCharacter)
 	{

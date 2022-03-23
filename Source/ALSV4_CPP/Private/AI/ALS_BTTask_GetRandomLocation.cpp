@@ -26,7 +26,7 @@ EBTNodeResult::Type UALS_BTTask_GetRandomLocation::ExecuteTask(UBehaviorTreeComp
 		if (Filter)
 		{
 			const ANavigationData* NavData = NavSys->GetDefaultNavDataInstance(FNavigationSystem::DontCreate);
-			if (NavData)
+			if (IsValid(NavData))
 			{
 				SharedFilter = UNavigationQueryFilter::GetQueryFilter(*NavData, World, Filter);
 			}
