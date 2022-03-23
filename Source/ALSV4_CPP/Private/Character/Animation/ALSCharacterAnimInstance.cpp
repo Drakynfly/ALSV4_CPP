@@ -621,7 +621,7 @@ void UALSCharacterAnimInstance::UpdateRotationValues()
 	// Set the Movement Direction
 	MovementDirection = CalculateMovementDirection();
 
-	// Set the Yaw Offsets. These values influence the "YawOffset" curve in the animgraph and are used to offset
+	// Set the Yaw Offsets. These values influence the "YawOffset" curve in the AnimGraph and are used to offset
 	// the characters rotation for more natural movement. The curves allow for fine control over how the offset
 	// behaves for each movement direction.
 	FRotator Delta = CharacterInformation.Velocity.ToOrientationRotator() - CharacterInformation.AimingRotation;
@@ -889,7 +889,7 @@ void UALSCharacterAnimInstance::TurnInPlace(const FRotator TargetRotation, const
 	PlaySlotAnimationAsDynamicMontage(TargetTurnAsset.Animation, TargetTurnAsset.SlotName, 0.2f, 0.2f,
 	                                  TargetTurnAsset.PlayRate * PlayRateScale, 1, 0.0f, StartTime);
 
-	// Step 4: Scale the rotation amount (gets scaled in animgraph) to compensate for turn angle (If Allowed) and play rate.
+	// Step 4: Scale the rotation amount (gets scaled in AnimGraph) to compensate for turn angle (If Allowed) and play rate.
 	if (TargetTurnAsset.ScaleTurnAngle)
 	{
 		Grounded.RotationScale = (TurnAngle / TargetTurnAsset.AnimatedAngle) * TargetTurnAsset.PlayRate * PlayRateScale;

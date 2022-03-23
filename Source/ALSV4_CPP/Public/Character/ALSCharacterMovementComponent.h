@@ -65,7 +65,7 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Movement System")
 	FALSMovementSettings CurrentMovementSettings;
-	
+
 	// Set Movement Curve (Called in every instance)
 	float GetMappedSpeed() const;
 
