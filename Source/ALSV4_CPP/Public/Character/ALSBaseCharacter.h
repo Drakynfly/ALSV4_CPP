@@ -16,6 +16,7 @@
 
 // forward declarations
 class UALSDebugComponent;
+class UALSFlightComponent;
 class UAnimMontage;
 class UALSPlayerCameraBehavior;
 enum class EVisibilityBasedAnimTickOption : uint8;
@@ -49,10 +50,6 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	virtual void NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved,
-					FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
-					const FHitResult& Hit) override;
 
 	// We are overriding this to implement custom handling for flight logic.
 	virtual void AddMovementInput(FVector WorldDirection, float ScaleValue, bool bForce = false) override;
@@ -238,6 +235,9 @@ public:
 	UFUNCTION(BlueprintGetter, Category = "ALS|Movement System")
 	bool HasMovementInput() const { return bHasMovementInput; }
 
+	UFUNCTION(BlueprintGetter, Category = "ALS|Movement System")
+	FRotator GetLastVelocityRotation() const { return LastVelocityRotation; }
+
 	UFUNCTION(BlueprintCallable, Category = "ALS|Movement System")
 	FALSMovementSettings GetTargetMovementSettings() const;
 
@@ -272,21 +272,6 @@ public:
 	/** Implement on BP to get required roll animation according to character's state */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "ALS|Movement System")
 	UAnimMontage* GetRollAnimation();
-
-	/** Flight System */
-
-	/** This can be overriden to setup custom conditions for allowing character flight. */
-	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "ALS|Flight")
-	virtual bool CanFly() const;
-
-	/** This can be overriden to setup custom conditions for allowing character flight from blueprint. */
-	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
-	bool FlightCheck() const;
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
-	bool FlightInterruptCheck(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp,
-								bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
-								const FHitResult& Hit) const;
 
 	/** Utility */
 
@@ -435,30 +420,21 @@ protected:
 
 	void UpdateCharacterMovement();
 
-	void UpdateFlightMovement(float DeltaTime);
-
 	void UpdateGroundedRotation(float DeltaTime);
 
 	void UpdateFallingRotation(float DeltaTime);
-
-	void UpdateFlightRotation(float DeltaTime);
 
 	void UpdateSwimmingRotation(float DeltaTime);
 
 	/** Utils */
 
-	// Gets the relative altitude of the player, measuring down to a point below the character.
-	UFUNCTION(BlueprintCallable, Category = "ALS|Flight")
-	float FlightDistanceCheck(float CheckDistance, FVector Direction) const;
-
+public:
 	void SmoothCharacterRotation(FRotator Target, float TargetInterpSpeed, float ActorInterpSpeed, float DeltaTime);
 
+protected:
 	float CalculateGroundedRotationRate() const;
 
-	float CalculateFlightRotationRate() const;
 	void LimitRotation(float AimYawMin, float AimYawMax, float InterpSpeed, float DeltaTime);
-
-	void UpdateRelativeAltitude();
 
 	void ForceUpdateCharacterState();
 
@@ -483,7 +459,7 @@ protected:
 
 public:
 	/** Multicast delegate for ViewMode changing. */
-	UPROPERTY(BlueprintAssignable, Category=Character)
+	UPROPERTY(BlueprintAssignable, Category = Character)
 	FViewModeChangedSignature ViewModeChangedDelegate;
 
 protected:
@@ -522,34 +498,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
 	float ThirdPersonFOV = 90.0f;
 
-	/** Flight */
-
-	// Flag to call CanFly() per tick. This will disable flight in midair on a false return. When disabled, CanFly() will
-	// only be called on pre-takeoff.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
-	bool AlwaysCheckFlightConditions = false;
-
-	// Should FlightInterruptCheck be used to determine if flight should be interrupted when colliding in midair.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
-	bool UseFlightInterrupt = true;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
 	float FirstPersonFOV = 90.0f;
 
-	// The velocity of the hit required to trigger a positive FlightInterruptThresholdCheck.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Flight")
-	float FlightInterruptThreshold = 600;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Camera System")
 	bool bRightShoulder = false;
-
-	// The max degree that flight input will consider forward.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Flight", Meta = (UIMin = 0, UIMax = 90))
-	float MaxFlightForwardAngle = 85;
-	/** Movement System */
-
-	// Maximum rotation in Yaw, Pitch and Roll, that may be achieved in flight.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Flight")
-	FVector MaxFlightLean = {40, 40, 0};
 
 	/** Essential Information */
 
@@ -612,9 +565,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_RotationMode)
 	EALSRotationMode RotationMode = EALSRotationMode::LookingDirection;
 
-	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_FlightState)
-	EALSFlightState FlightState = EALSFlightState::None;
-
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
 	EALSGait Gait = EALSGait::Walking;
 
@@ -623,6 +573,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_ViewMode)
 	EALSViewMode ViewMode = EALSViewMode::ThirdPerson;
+
+	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values", ReplicatedUsing = OnRep_FlightState)
+	EALSFlightState FlightState = EALSFlightState::None;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|State Values")
 	int32 OverlayOverrideState = 0;
@@ -705,15 +658,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "ALS|Camera")
 	TObjectPtr<UALSPlayerCameraBehavior> CameraBehavior;
 
-	// Altitude variables for flight calculations.
-	float SeaAltitude = 0; // @todo essentially global.
-	float TroposphereHeight = 0; // @todo essentially global.
-
-	float RelativeAltitude = 0;
-	float AbsoluteAltitude = 0;
-
-	float AtmosphereAtAltitude = 1;
-
 	TArray<FALSMovementModifier> MovementModifiers;
 
 	/** Last time the 'first' crouch/roll button is pressed */
@@ -731,4 +675,7 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UALSDebugComponent> ALSDebugComponent = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UALSFlightComponent> ALSFlightComponent = nullptr;
 };

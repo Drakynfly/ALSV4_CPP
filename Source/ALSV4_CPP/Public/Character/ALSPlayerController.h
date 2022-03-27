@@ -48,6 +48,9 @@ protected:
 	void RightMovementAction(const FInputActionValue& Value);
 
 	UFUNCTION()
+	void UpwardMovementAction(const FInputActionValue& Value);
+
+	UFUNCTION()
 	void CameraUpAction(const FInputActionValue& Value);
 
 	UFUNCTION()

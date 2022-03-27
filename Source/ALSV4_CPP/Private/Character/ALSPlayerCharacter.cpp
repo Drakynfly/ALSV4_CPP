@@ -15,34 +15,8 @@ void AALSPlayerCharacter::MovementInput_X(const float Value)
 	if (Value == 0.f) return;
 
 	// Default camera relative movement behavior
-
-	float Pitch = AimingRotation.Pitch;
-	if (GetCharacterMovement()->MovementMode == MOVE_Flying)
-	{
-		const float AltitudeAdjustedAngle = MaxFlightForwardAngle * AtmosphereAtAltitude;
-
-		if (Value >= 0.f) // Going forward
-		{
-			Pitch = FMath::ClampAngle(AimingRotation.Pitch, -MaxFlightForwardAngle,
-			                          AltitudeAdjustedAngle);
-		}
-		else // Going backward
-		{
-			Pitch = FMath::ClampAngle(AimingRotation.Pitch, -AltitudeAdjustedAngle,
-			                          MaxFlightForwardAngle);
-		}
-	}
-	const FRotator DirRotator(Pitch, AimingRotation.Yaw, 0.0f);
+	const FRotator DirRotator(0, AimingRotation.Yaw, 0.0f);
 	AddMovementInput(UKismetMathLibrary::GetForwardVector(DirRotator), Value);
-
-	//if (MovementState == EALSMovementState::Grounded || MovementState == EALSMovementState::InAir)
-	//{
-	//	// Default camera relative movement behavior
-	//	const float Scale = UALSMathLibrary::FixDiagonalGamepadValues(GetInputAxisValue("MoveForward/Backwards"), Value)
-	//		.Value;
-	//	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
-	//	AddMovementInput(UKismetMathLibrary::GetRightVector(DirRotator), Scale);
-	//}
 }
 
 void AALSPlayerCharacter::MovementInput_Y(const float Value)
@@ -52,15 +26,6 @@ void AALSPlayerCharacter::MovementInput_Y(const float Value)
 	// Default camera relative movement behavior
 	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
 	AddMovementInput(UKismetMathLibrary::GetRightVector(DirRotator), Value);
-
-
-	//if (MovementState == EALSMovementState::Grounded || MovementState == EALSMovementState::InAir)
-	//{
-	//	// Default camera relative movement behavior
-	//	const float Scale = UALSMathLibrary::FixDiagonalGamepadValues(Value, GetInputAxisValue("MoveRight/Left")).Key;
-	//	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
-	//	AddMovementInput(UKismetMathLibrary::GetForwardVector(DirRotator), Scale);
-	//}
 }
 
 void AALSPlayerCharacter::MovementInput_Z(const float Value)

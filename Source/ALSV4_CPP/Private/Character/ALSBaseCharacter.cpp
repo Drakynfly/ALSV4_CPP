@@ -16,6 +16,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Components/ALSFlightComponent.h"
 #include "Net/UnrealNetwork.h"
 
 using namespace ALS::BaseCharacter;
@@ -27,10 +28,6 @@ AALSBaseCharacter::AALSBaseCharacter(const FObjectInitializer& ObjectInitializer
 	bUseControllerRotationYaw = 0;
 	bReplicates = true;
 	SetReplicatingMovement(true);
-
-	const UALS_Settings* UALS_Settings = UALS_Settings::Get();
-	SeaAltitude = UALS_Settings->SeaAltitude;
-	TroposphereHeight = UALS_Settings->TroposphereHeight;
 }
 
 void AALSBaseCharacter::PostInitializeComponents()
@@ -58,28 +55,11 @@ void AALSBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION(AALSBaseCharacter, VisibleMesh, COND_SkipOwner);
 }
 
-void AALSBaseCharacter::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp,
-                                  const bool bSelfMoved, const FVector HitLocation, const FVector HitNormal,
-                                  const FVector NormalImpulse, const FHitResult& Hit)
+void AALSBaseCharacter::AddMovementInput(FVector WorldDirection, float ScaleValue, const bool bForce)
 {
-	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-
-	if (FlightState != EALSFlightState::None)
+	if (GetCharacterMovement()->MovementMode == MOVE_Flying && ALSFlightComponent)
 	{
-		if ((UseFlightInterrupt && FlightInterruptCheck(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit))
-			|| RelativeAltitude <= 5.f)
-		{
-			SetFlightState(EALSFlightState::None);
-		}
-	}
-}
-
-void AALSBaseCharacter::AddMovementInput(FVector WorldDirection, const float ScaleValue, const bool bForce)
-{
-	if (GetCharacterMovement()->MovementMode == MOVE_Flying)
-	{
-		// Prevent the player from flying above world max height.
-		if (WorldDirection.Z > 0.0f) { WorldDirection.Z *= AtmosphereAtAltitude; }
+		ALSFlightComponent->AdjustFlightInput(WorldDirection, ScaleValue);
 	}
 
 	Super::AddMovementInput(WorldDirection, ScaleValue, bForce);
@@ -135,7 +115,9 @@ void AALSBaseCharacter::BeginPlay()
 
 	MyCharacterMovementComponent->SetMovementSettings(GetTargetMovementSettings());
 
+	// Find optional components
 	ALSDebugComponent = FindComponentByClass<UALSDebugComponent>();
+	ALSFlightComponent = FindComponentByClass<UALSFlightComponent>();
 }
 
 void AALSBaseCharacter::Tick(const float DeltaTime)
@@ -157,18 +139,18 @@ void AALSBaseCharacter::Tick(const float DeltaTime)
 				UpdateGroundedRotation(DeltaTime);
 				break;
 			}
-		case EALSMovementState::Freefall:	UpdateFallingRotation(DeltaTime); break;
+		case EALSMovementState::Freefall:
+			{
+				UpdateFallingRotation(DeltaTime);
+				break;
+			}
 		case EALSMovementState::Flight:
 			{
-				UpdateRelativeAltitude();
-				UpdateCharacterMovement();
-				UpdateFlightRotation(DeltaTime);
-
-				//@todo why is this here? should probably be in CharacterMovementComponent
-				// or flight component
-				if (HasAuthority() || GetLocalRole() == ROLE_AutonomousProxy)
+				if (IsValid(ALSFlightComponent))
 				{
-					UpdateFlightMovement(DeltaTime);
+					UpdateCharacterMovement();
+					ALSFlightComponent->UpdateFlight(DeltaTime);
+					InAirRotation = GetActorRotation();
 				}
 				break;
 			}
@@ -396,6 +378,26 @@ void AALSBaseCharacter::Server_SetRotationMode_Implementation(const EALSRotation
 	SetRotationMode(NewRotationMode, bForce);
 }
 
+void AALSBaseCharacter::SetViewMode(const EALSViewMode NewViewMode, const bool bForce)
+{
+	if (bForce || ViewMode != NewViewMode)
+	{
+		const EALSViewMode Prev = ViewMode;
+		ViewMode = NewViewMode;
+		OnViewModeChanged(Prev);
+
+		if (GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			Server_SetViewMode(NewViewMode, bForce);
+		}
+	}
+}
+
+void AALSBaseCharacter::Server_SetViewMode_Implementation(const EALSViewMode NewViewMode, const bool bForce)
+{
+	SetViewMode(NewViewMode, bForce);
+}
+
 void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState, const bool bForce)
 {
 	if (bForce || FlightState != NewFlightState)
@@ -403,7 +405,7 @@ void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState, con
 		// If we are trying for a mode other than turning flight off, verify the character is able to fly.
 		if (NewFlightState != EALSFlightState::None)
 		{
-			if (!CanFly()) return;
+			if (!IsValid(ALSFlightComponent) && !ALSFlightComponent->CanFly()) return;
 		}
 
 		const EALSFlightState Prev = FlightState;
@@ -435,26 +437,6 @@ void AALSBaseCharacter::SetFlightState(const EALSFlightState NewFlightState, con
 void AALSBaseCharacter::Server_SetFlightState_Implementation(const EALSFlightState NewFlightState, const bool bForce)
 {
 	SetFlightState(NewFlightState);
-}
-
-void AALSBaseCharacter::SetViewMode(const EALSViewMode NewViewMode, const bool bForce)
-{
-	if (bForce || ViewMode != NewViewMode)
-	{
-		const EALSViewMode Prev = ViewMode;
-		ViewMode = NewViewMode;
-		OnViewModeChanged(Prev);
-
-		if (GetLocalRole() == ROLE_AutonomousProxy)
-		{
-			Server_SetViewMode(NewViewMode, bForce);
-		}
-	}
-}
-
-void AALSBaseCharacter::Server_SetViewMode_Implementation(const EALSViewMode NewViewMode, const bool bForce)
-{
-	SetViewMode(NewViewMode, bForce);
 }
 
 void AALSBaseCharacter::SetOverlayState(const EALSOverlayState NewState, const bool bForce)
@@ -667,30 +649,6 @@ bool AALSBaseCharacter::CanSprint() const
 	}
 
 	return false;
-}
-
-bool AALSBaseCharacter::CanFly() const
-{
-	return MyCharacterMovementComponent->CanEverFly() && FlightCheck();
-}
-
-bool AALSBaseCharacter::FlightCheck_Implementation() const
-{
-	return true;
-	// @todo
-	//&& FMath::IsWithin(Temperature, FlightTempBounds.X, FlightTempBounds.Y)
-	//&& EffectiveWeight < FlightWeightCutOff;
-}
-
-bool AALSBaseCharacter::FlightInterruptCheck_Implementation(UPrimitiveComponent* MyComp, AActor* Other,
-                                                            UPrimitiveComponent* OtherComp, bool bSelfMoved,
-                                                            FVector HitLocation, FVector HitNormal, FVector NormalImpulse,
-                                                            const FHitResult& Hit) const
-{
-	float MyVelLen;
-	FVector MyVelDir;
-	GetVelocity().GetAbs().ToDirectionAndLength(MyVelDir, MyVelLen);
-	return MyVelLen >= FlightInterruptThreshold;
 }
 
 FVector AALSBaseCharacter::GetMovementInput() const
@@ -1148,77 +1106,6 @@ void AALSBaseCharacter::UpdateCharacterMovement()
 	MyCharacterMovementComponent->SetAllowedGait(AllowedGait);
 }
 
-void AALSBaseCharacter::UpdateFlightMovement(const float DeltaTime)
-{
-	if (AlwaysCheckFlightConditions)
-	{
-		if (!CanFly())
-		{
-			SetFlightState(EALSFlightState::None);
-			return;
-		}
-	}
-
-	// The rest of this function calculates the auto-hover strength. This is how much downward force is generated by
-	// the wings to keep the character afloat.
-	float AutoHover;
-
-	// Represents the strength of the wings forcing downward when flying, measured in the units below the character that
-	// the pressure gradient extends.
-	const float WingPressureDepth = 200; //@todo old calculation: FlightStrengthPassive / EffectiveWeight;
-
-	FVector VelocityDirection;
-	float VelocityLength;
-	GetVelocity().ToDirectionAndLength(VelocityDirection, VelocityLength);
-
-	const float VelocityAlpha = FMath::GetMappedRangeValueClamped(FVector2f{0, GetCharacterMovement()->MaxFlySpeed * 1.5f},
-																  FVector2f{0, 1},
-																  VelocityLength);
-
-	const FVector PressureDirection = FMath::Lerp(FVector(0, 0, -1), -VelocityDirection, VelocityAlpha);
-
-	const float PressureAlpha = FlightDistanceCheck(WingPressureDepth, PressureDirection) / WingPressureDepth;
-
-	// If a pressure curve is used, modify speed. Otherwise, default to 1 for no effect.
-	float GroundPressure;
-	//if (GroundPressureFalloff)
-	//{
-	//	GroundPressure = GroundPressureFalloff->GetFloatValue(PressureAlpha);
-	//}
-	//else
-	{
-		GroundPressure = 1;
-	}
-
-	const float LocalTemperatureAffect = 1; // TemperatureAffect.Y;
-	const float LocalWeightAffect = 1; //WeightAffect.Y;
-
-	// @TODO Design an algorithm for calculating thrust, and use it to determine lift. modify auto-thrust with that so that the player slowly drifts down when too heavy.
-
-	switch (FlightState)
-	{
-	case EALSFlightState::None: return;
-	case EALSFlightState::Hovering:
-		AutoHover = (GroundPressure + 0.5) / 1.5 * LocalTemperatureAffect * (LocalWeightAffect / 2);
-		break;
-	case EALSFlightState::Aerial:
-		AutoHover = (GroundPressure + 0.5) / 1.5 * LocalTemperatureAffect * LocalWeightAffect;
-		break;
-	//case EALSFlightState::Raising:
-	//	AutoHover = (GroundPressure + FlightStrengthActive) * LocalTemperatureAffect * (
-	//		LocalWeightAffect * 1.5);
-	//	break;
-	//case EALSFlightState::Lowering:
-	//	AutoHover = (GroundPressure * 0.5f) + (-FlightStrengthActive + (LocalTemperatureAffect
-	//		- 1)) + -LocalWeightAffect;
-	//	break;
-	default: return;
-	}
-
-	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
-	//AddMovementInput(UKismetMathLibrary::GetUpVector(DirRotator), AutoHover, true);
-}
-
 void AALSBaseCharacter::UpdateGroundedRotation(const float DeltaTime)
 {
 	if (MovementAction == EALSMovementAction::None)
@@ -1314,92 +1201,12 @@ void AALSBaseCharacter::UpdateFallingRotation(const float DeltaTime)
 	}
 }
 
-void AALSBaseCharacter::UpdateFlightRotation(const float DeltaTime)
-{
-	const float SpeedCache = GetMyMovementComponent()->GetMappedSpeed();
-	const float CheckAltitude = SpeedCache * 100.f;
-
-	const float FlightRotationRate = CalculateFlightRotationRate();
-
-	// Map distance to ground to a unit scalar.
-	const float Alpha_Altitude = FMath::GetMappedRangeValueClamped(FVector2f{0.f, CheckAltitude}, FVector2f{0.f, 1.f}, RelativeAltitude);
-
-	// Combine unit scalars equal to smaller.
-	const float RotationAlpha = Alpha_Altitude * (SpeedCache / 3);
-
-	// Calculate input leaning.
-	const FVector Lean = GetActorRotation().UnrotateVector(GetMovementInput().GetSafeNormal()) * MaxFlightLean * RotationAlpha;
-
-	const float Pitch = FMath::FInterpTo(GetActorRotation().Pitch, Lean.X * -1, DeltaTime, FlightRotationRate);
-	const float Roll = FMath::FInterpTo(GetActorRotation().Roll, Lean.Y, DeltaTime, FlightRotationRate);
-
-	const bool bCanUpdateMovingRot = ((bIsMoving && bHasMovementInput) || Speed > 150.0f) && !HasAnyRootMotion();
-	if (bCanUpdateMovingRot)
-	{
-		if (RotationMode == EALSRotationMode::VelocityDirection)
-		{
-			// Velocity Rotation
-			const float InterpSpeed = FMath::GetMappedRangeValueClamped<float, float>({0.f, 3.f}, {0.1f, FlightRotationRate}, SpeedCache);
-			SmoothCharacterRotation({Pitch, LastVelocityRotation.Yaw, Roll}, 100.0f, InterpSpeed, DeltaTime);
-		}
-		else if (RotationMode == EALSRotationMode::LookingDirection)
-		{
-			// Looking Direction Rotation
-			float YawValue;
-			if (Gait == EALSGait::Sprinting)
-			{
-				YawValue = LastVelocityRotation.Yaw;
-			}
-			else
-			{
-				// Walking or Running..
-				//const float YawOffsetCurveVal = MainAnimInstance->GetCurveValue(NAME_YawOffset);
-				YawValue = AimingRotation.Yaw; //+ YawOffsetCurveVal;
-			}
-			SmoothCharacterRotation({Pitch, YawValue, Roll}, 100.0f, FlightRotationRate, DeltaTime);
-		}
-		else if (RotationMode == EALSRotationMode::Aiming)
-		{
-			// Aiming Rotation and looking direction
-			const float FinalRoll = Roll + AimingRotation.Roll / 2;
-			SmoothCharacterRotation({Pitch, AimingRotation.Yaw, FinalRoll}, 500.0f, FlightRotationRate, DeltaTime);
-		}
-	}
-	else
-	{
-			SmoothCharacterRotation({0, GetActorRotation().Yaw, 0}, 500.0f, FlightRotationRate, DeltaTime);
-	}
-
-	InAirRotation = GetActorRotation();
-}
-
 void AALSBaseCharacter::UpdateSwimmingRotation(const float DeltaTime)
 {
 	//@todo this is a visual effect that should probably be handled by animations, not code.
 	float const Lean = FMath::GetMappedRangeValueUnclamped(FVector2f{0, 3}, FVector2f{0, 90}, GetMyMovementComponent()->GetMappedSpeed());
 
 	SmoothCharacterRotation({Lean * -Acceleration.X, AimingRotation.Yaw, 0.0f}, 0.f, 2.5f, DeltaTime);
-}
-
-float AALSBaseCharacter::FlightDistanceCheck(float CheckDistance, FVector Direction) const
-{
-	UWorld* World = GetWorld();
-	if (!World) return 0.f;
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	const FVector CheckStart = GetActorLocation() - FVector{0, 0, GetCapsuleComponent()->GetScaledCapsuleHalfHeight()};
-	const FVector CheckEnd = CheckStart + (Direction * CheckDistance);
-	World->LineTraceSingleByChannel(HitResult, CheckStart, CheckEnd, UALS_Settings::Get()->FlightCheckChannel, Params);
-
-#if WITH_EDITOR
-	//if (DrawDebug) DrawDebugLine(World, CheckStart, CheckEnd, FColor::Silver, false, 0.5f, 0, 2);
-#endif
-
-	if (HitResult.bBlockingHit) { return HitResult.Distance; }
-	return CheckDistance;
 }
 
 EALSGait AALSBaseCharacter::GetAllowedGait() const
@@ -1480,23 +1287,6 @@ float AALSBaseCharacter::CalculateGroundedRotationRate() const
 	return CurveVal * ClampedAimYawRate;
 }
 
-float AALSBaseCharacter::CalculateFlightRotationRate() const
-{
-	// Calculate the rotation rate by using the current Rotation Rate Curve in the Movement Settings.
-	// Using the curve in conjunction with the mapped speed gives you a high level of control over the rotation
-	// rates for each speed. Increase the speed if the camera is rotating quickly for more responsive rotation.
-
-	const float MappedSpeedVal = MyCharacterMovementComponent->GetMappedSpeed();
-	const float CurveVal =
-		MyCharacterMovementComponent->CurrentMovementSettings.RotationRateCurve->GetFloatValue(MappedSpeedVal);
-	const float ClampedAimYawRate = FMath::GetMappedRangeValueClamped(FVector2f{0.0f, 300.0f}, FVector2f{1.0f, 3.0f}, AimYawRate);
-	return CurveVal * ClampedAimYawRate;
-}
-
-void AALSBaseCharacter::UpdateRelativeAltitude()
-{
-	RelativeAltitude = FlightDistanceCheck(TroposphereHeight, FVector::DownVector);
-}
 void AALSBaseCharacter::LimitRotation(const float AimYawMin, const float AimYawMax, const float InterpSpeed, const float DeltaTime)
 {
 	// Prevent the character from rotating past a certain angle.
@@ -1520,7 +1310,7 @@ void AALSBaseCharacter::ForwardMovementAction_Implementation(const float Value)
 	}
 
 	// Default camera relative movement behavior
-	const FRotator DirRotator(0.0f, AimingRotation.Yaw, 0.0f);
+	const FRotator DirRotator(AimingRotation.Pitch, AimingRotation.Yaw, 0.0f);
 	AddMovementInput(UKismetMathLibrary::GetForwardVector(DirRotator), Value);
 }
 

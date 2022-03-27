@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Character/ALSBaseCharacter.h"
+#include "ALSCharacter.h"
 #include "ALSPlayerCharacter.generated.h"
 
 class UALSPlayerCameraBehavior;
@@ -12,7 +11,7 @@ class UALSPlayerCameraBehavior;
  *
  */
 UCLASS()
-class ALSV4_CPP_API AALSPlayerCharacter : public AALSBaseCharacter
+class ALSV4_CPP_API AALSPlayerCharacter : public AALSCharacter
 {
 	GENERATED_BODY()
 
