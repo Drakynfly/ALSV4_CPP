@@ -17,10 +17,5 @@
 - No animations for flying and swimming right now, just the framework.
 - See [Issues](https://github.com/dyanikoglu/ALSV4_CPP/issues) section
 
-## Setting Up The Plugin
-- Clone the repository inside your project's `Plugins` folder, or download the latest release and extract it into your project's or engine's `Plugins` folder.
-- Launch the project, and enable plugin content viewer as seen below. This will show contents of the plugin in your content browser:
-![image](https://github.com/Drakynfly/ALSV4_CPP_Faerie/raw/main/Resources/Readme_Content_1.png)
-
 ## License & Contribution
 **Source code** of the plugin is licensed under MIT license, and other developers are encouraged to fork the repository, open issues & pull requests to help the development.
