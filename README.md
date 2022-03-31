@@ -11,7 +11,6 @@
 - Mounting added as a third stance. Disables character movement and redirects input to external actors.
 - Integration with other gameplay systems; e.g system to allow movement speed to be modified by external systems, such as an inventory, or world weather.
 - Extra mantling features: Auto-mantling over short obstacles.
-- Easier project integration: there is no need to modify config files in this fork. See #Setting Up The Plugin.
 - Some features are being reimplemented differantly, according to the design of Project Faerie.
 
 ## Known Issues
@@ -22,8 +21,6 @@
 - Clone the repository inside your project's `Plugins` folder, or download the latest release and extract it into your project's or engine's `Plugins` folder.
 - Launch the project, and enable plugin content viewer as seen below. This will show contents of the plugin in your content browser:
 ![image](https://github.com/Drakynfly/ALSV4_CPP_Faerie/raw/main/Resources/Readme_Content_1.png)
-- This fork removes the need for any config file changes. There are now settings availible in Project Settings menu. Setup Axis inputs, trace channels, collision profiles, and more.
-- This fork seperates the functionality for controlling ALSBaseCharacter into a child class: ALSPlayerCharacter. Parent player controlled characters to this class for access to the rest of the input functions (which are renamed to all begin with "Input_").
 
 ## License & Contribution
 **Source code** of the plugin is licensed under MIT license, and other developers are encouraged to fork the repository, open issues & pull requests to help the development.
