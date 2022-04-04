@@ -32,8 +32,23 @@ void UALSFlightComponent::BeginPlay()
 		{
 			ALSDebugComponent = OwnerCharacter->FindComponentByClass<UALSDebugComponent>();
 
+			// @TODO flight catching should really be in the movement state machine not in the flight component.
+			OwnerCharacter->MovementModeChangedDelegate.AddDynamic(this, &UALSFlightComponent::OnOwningMovementModeChanged);
+
 			OwnerCharacter->OnActorHit.AddDynamic(this, &UALSFlightComponent::OnActorHit);
 		}
+	}
+}
+
+// @TODO flight catching should really be in the movement state machine not in the flight component.
+
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
+void UALSFlightComponent::OnOwningMovementModeChanged(ACharacter* Character, EMovementMode PrevMovementMode,
+                                                      uint8 PreviousCustomMode)
+{
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		TimeStartingFalling = FDateTime::Now();
 	}
 }
 
@@ -212,6 +227,20 @@ void UALSFlightComponent::UpdateFlightMovement(const float DeltaTime)
 
 	const FRotator DirRotator(0.0f, OwnerCharacter->GetAimingRotation().Yaw, 0.0f);
 	//AddMovementInput(UKismetMathLibrary::GetUpVector(DirRotator), AutoHover, true);
+}
+
+// @TODO flight catching should really be in the movement state machine not in the flight component.
+bool UALSFlightComponent::WantsToCatchFalling_Implementation() const
+{
+	if (TimeToWaitBeforeCatchFalling >= 0)
+	{
+		if (FDateTime::Now() - TimeStartingFalling >= FTimespan::FromSeconds(TimeToWaitBeforeCatchFalling))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 float UALSFlightComponent::FlightDistanceCheck(float CheckDistance, FVector Direction) const

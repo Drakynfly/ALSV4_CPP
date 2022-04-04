@@ -20,6 +20,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+
+	// @TODO flight catching should really be in the movement state machine not in the flight component.
+	UFUNCTION()
+	void OnOwningMovementModeChanged(class ACharacter* Character, EMovementMode PrevMovementMode, uint8 PreviousCustomMode);
+
 	UFUNCTION()
 	void OnActorHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit);
 
@@ -42,6 +47,10 @@ public:
 	/** This can be overriden to setup custom conditions for allowing character flight from blueprint. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintPure = false, Category = "ALS|Flight")
 	bool FlightCheck() const;
+
+	// @TODO flight catching should really be in the movement state machine not in the flight component.
+	UFUNCTION(BlueprintNativeEvent, Category = "ALS|Flight")
+	bool WantsToCatchFalling() const;
 
 	// Gets the relative altitude of the player, measuring down to a point below the character.
 	UFUNCTION(BlueprintCallable, Category = "ALS|Flight")
@@ -70,6 +79,11 @@ protected:
 	// Maximum rotation in Yaw, Pitch and Roll, that may be achieved in flight.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Flight")
 	FVector MaxFlightLean = {40, 40, 0};
+
+	// @TODO flight catching should really be in the movement state machine not in the flight component.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ALS|Flight")
+	float TimeToWaitBeforeCatchFalling = 1;
+
 private:
 	UPROPERTY()
 	TObjectPtr<AALSBaseCharacter> OwnerCharacter = nullptr;
@@ -85,4 +99,8 @@ private:
 	float TroposphereHeight = 0; // @todo essentially global.
 
 	float RelativeAltitude = 0;
+
+	// @TODO flight catching should really be in the movement state machine not in the flight component.
+	// Used to track how long we have been falling for.
+	FDateTime TimeStartingFalling;
 };

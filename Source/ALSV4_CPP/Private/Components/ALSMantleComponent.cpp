@@ -59,6 +59,10 @@ void UALSMantleComponent::BeginPlay()
 	}
 }
 
+bool UALSMantleComponent::CanMantle_Implementation(EALSMantleType Type)
+{
+	return true;
+}
 
 void UALSMantleComponent::TickComponent(const float DeltaTime, const ELevelTick TickType,
                                         FActorComponentTickFunction* ThisTickFunction)
@@ -90,6 +94,11 @@ void UALSMantleComponent::MantleStart(const float MantleHeight, const FALSCompon
                                       const EALSMantleType MantleType)
 {
 	if (OwnerCharacter == nullptr || !IsValid(MantleLedgeWS.Component) || !IsValid(MantleTimeline))
+	{
+		return;
+	}
+
+	if (!CanMantle(MantleType))
 	{
 		return;
 	}

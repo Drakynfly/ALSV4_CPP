@@ -16,7 +16,7 @@
 #include "Components/ALSDebugComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-/*** BEGIN CODE COPIED FROM AALSPLAYERCONTROLLER ***/
+/*** BEGIN CODE COPIED FROM <<AALSPlayerController>> ***/
 
 void AALSPlayerController::OnPossess(APawn* NewPawn)
 {
@@ -242,6 +242,8 @@ void AALSPlayerController::LookingDirectionAction(const FInputActionValue& Value
 	}
 }
 
+/*** END CODE COPIED FROM <<AALSPlayerController>> ***/
+
 void AALSPlayerController::DebugToggleHudAction(const FInputActionValue& Value)
 {
 	if (PossessedCharacter && Value.Get<bool>())
@@ -373,5 +375,3 @@ void AALSPlayerController::DebugOverlayMenuCycleAction(const FInputActionValue& 
 		}
 	}
 }
-
-/*** END CODE COPIED FROM AALSPLAYERCONTROLLER ***/

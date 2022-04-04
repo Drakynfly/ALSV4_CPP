@@ -141,6 +141,13 @@ void AALSBaseCharacter::Tick(const float DeltaTime)
 			}
 		case EALSMovementState::Freefall:
 			{
+				// @TODO flight catching should really be in the movement state machine not in the flight component.
+				if (ALSFlightComponent && ALSFlightComponent->WantsToCatchFalling())
+				{
+					SetFlightState(EALSFlightState::Hovering);
+					break;
+				}
+
 				UpdateFallingRotation(DeltaTime);
 				break;
 			}

@@ -25,7 +25,7 @@ class ALSV4_CPP_API AALSPlayerController : public APlayerController
 	 * and updated if this changes.
 	 */
 
-	/*** BEGIN CODE COPIED FROM AALSPLAYERCONTROLLER ***/
+	/*** BEGIN CODE COPIED FROM <<AALSPlayerController>> ***/
 
 public:
 	virtual void OnPossess(APawn* NewPawn) override;
@@ -85,6 +85,8 @@ protected:
 
 	UFUNCTION()
 	void LookingDirectionAction(const FInputActionValue& Value);
+
+	/*** END CODE COPIED FROM <<AALSPlayerController>> ***/
 
 	// Debug actions
 	UFUNCTION()

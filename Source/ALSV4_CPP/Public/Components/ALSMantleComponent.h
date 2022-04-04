@@ -46,6 +46,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "ALS|Mantle System")
 	FALSMantleAsset GetMantleAsset(EALSMantleType MantleType, EALSOverlayState CurrentOverlayState);
 
+	/** Implement to dynamically determine if we can mantle according to character state */
+	UFUNCTION(BlueprintNativeEvent)
+	bool CanMantle(EALSMantleType Type);
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
@@ -63,7 +67,7 @@ protected:
 	                           EALSMantleType MantleType);
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ALS|Mantle System")
+	UPROPERTY(BlueprintReadWrite, Category = "ALS|Mantle System")
 	TObjectPtr<UTimelineComponent> MantleTimeline = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ALS|Mantle System")
@@ -113,7 +117,7 @@ protected:
 	bool bAlwaysCatchIfFalling = true;
 
 private:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<AALSBaseCharacter> OwnerCharacter;
 
 	UPROPERTY()

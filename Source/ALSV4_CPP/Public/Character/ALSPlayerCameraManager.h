@@ -43,6 +43,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
 	bool CustomCameraBehavior(float DeltaTime, FVector& Location, FRotator& Rotation, float& FOV);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "ALS|Camera", meta = (DisplayName = "On Possess"))
+	void K2_OnPossess();
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ALS|Camera")
 	TObjectPtr<AALSBaseCharacter> ControlledCharacter = nullptr;

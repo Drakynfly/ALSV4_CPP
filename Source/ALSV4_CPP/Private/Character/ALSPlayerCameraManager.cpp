@@ -48,6 +48,8 @@ void AALSPlayerCameraManager::OnPossess(AALSBaseCharacter* NewCharacter)
 	SmoothedPivotTarget.SetLocation(TPSLoc);
 
 	ALSDebugComponent = ControlledCharacter->FindComponentByClass<UALSDebugComponent>();
+
+	K2_OnPossess();
 }
 
 float AALSPlayerCameraManager::GetCameraBehaviorParam(const FName CurveName) const
